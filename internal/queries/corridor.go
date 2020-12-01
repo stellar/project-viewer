@@ -24,7 +24,7 @@ func createCorridorTradeQuery(source, dest Asset, startLedger, endLedger string)
 		query += fmt.Sprintf(" AND ledger_sequence BETWEEN %s AND %s", startLedger, endLedger)
 	}
 
-	query += fmt.Sprintf(" GROUP BY seq LIMIT %d", queryLimit)
+	query += fmt.Sprintf(" GROUP BY seq ORDER BY seq ASC LIMIT %d", queryLimit)
 	return query
 }
 
@@ -40,7 +40,7 @@ func createCorridorQuery(source, dest Asset, startLedger, endLedger string) stri
 		query += fmt.Sprintf(" AND ledger_sequence BETWEEN %s AND %s", startLedger, endLedger)
 	}
 
-	query += fmt.Sprintf(" GROUP BY ledger_sequence LIMIT %d", queryLimit)
+	query += fmt.Sprintf(" GROUP BY seq ORDER BY seq ASC LIMIT %d", queryLimit)
 	return query
 }
 
