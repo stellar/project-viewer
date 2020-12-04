@@ -2,16 +2,11 @@ package queries
 
 import (
 	"context"
-	"os"
-	"path"
 
 	"cloud.google.com/go/bigquery"
-	"google.golang.org/api/option"
 )
 
 const queryLimit = 100
-const projectID = "test-project-291320"
-const keyFileName = "testingKey.json"
 
 // CorridorResult is the result of a corridor query. It contains the source and destination volumes for a given ledger sequence
 type CorridorResult struct {
@@ -38,19 +33,8 @@ func (a Asset) IsCompleteAsset() bool {
 }
 
 // runQuery runs the provided query and returns the results
-func runQuery(query string) (*bigquery.RowIterator, error) {
+func runQuery(query string, client *bigquery.Client) (*bigquery.RowIterator, error) {
 	ctx := context.Background()
-
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := bigquery.NewClient(ctx, projectID, option.WithCredentialsFile(path.Join(currentDir, keyFileName)))
-	if err != nil {
-		return nil, err
-	}
-
 	q := client.Query(query)
 	return q.Read(ctx)
 }

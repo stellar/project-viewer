@@ -3,6 +3,7 @@ package queries
 import (
 	"fmt"
 
+	"cloud.google.com/go/bigquery"
 	"google.golang.org/api/iterator"
 )
 
@@ -45,9 +46,9 @@ func createCorridorQuery(source, dest Asset, startLedger, endLedger string) stri
 }
 
 // RunCorridorQuery queries BigQuery for the volume of assets over the specified corridor and returns the results
-func RunCorridorQuery(source, dest Asset, startLedger, endLedger string) ([]CorridorResult, error) {
+func RunCorridorQuery(source, dest Asset, startLedger, endLedger string, client *bigquery.Client) ([]CorridorResult, error) {
 	query := createCorridorQuery(source, dest, startLedger, endLedger)
-	it, err := runQuery(query)
+	it, err := runQuery(query, client)
 	if err != nil {
 		return nil, fmt.Errorf("error running query \n%s\n%v", query, err)
 	}
