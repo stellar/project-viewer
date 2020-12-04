@@ -13,7 +13,6 @@ import (
 )
 
 var update = flag.Bool("update", false, "update the golden files of this test")
-var NGNTtoEURTCorridor = "/corridor?sourceCode=NGNT&sourceIssuer=GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD&destCode=EURT&destIssuer=GAP5LETOV6YIE62YAM56STDANPRDO7ZFDBGSNHJQIYGGKSMOZAHOOS2S"
 
 type queryTest struct {
 	name           string
@@ -25,6 +24,7 @@ type queryTest struct {
 }
 
 func TestCorridorHandler(t *testing.T) {
+	var NGNTtoEURTCorridor = "/corridor?sourceCode=NGNT&sourceIssuer=GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD&destCode=EURT&destIssuer=GAP5LETOV6YIE62YAM56STDANPRDO7ZFDBGSNHJQIYGGKSMOZAHOOS2S"
 	tests := []queryTest{
 		{
 			name:           "full history query",

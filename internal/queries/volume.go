@@ -7,13 +7,34 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+// RunVolumeQuery queries BigQuery for the volume of assets over the specified corridor and returns the results
+func RunVolumeQuery(asset Asset, volumeFrom bool, startLedger, endLedger string, client *bigquery.Client) ([]VolumeResult, error) {
+	query := createVolumeQuery(asset, volumeFrom, startLedger, endLedger)
+	it, err := runQuery(query, client)
+	if err != nil {
+		return nil, fmt.Errorf("error running query \n%s\n%v", query, err)
+	}
+
+	var results []VolumeResult
+	for {
+		var res VolumeResult
+		if err := it.Next(&res); err == iterator.Done {
+			break
+		} else if err != nil {
+			return nil, fmt.Errorf("error parsing results from query: %v", err)
+		}
+
+		results = append(results, res)
+	}
+
+	return results, nil
+}
+
 // createVolumeTradeQuery returns a query that gets the the total volume to/from an asset, grouped by ledger.
 // The volume is calculated by looking at trades involving the assetswithin the provided ledger range.
 func createVolumeTradeQuery(asset Asset, volumeFrom bool, startLedger, endLedger string) string {
-	/*
-		Construct the base match and select statements. If we want volume from the base asset,
-		we need to look at the base_amount. If we want volume to, we look at the counter_amount.
-	*/
+	//	Construct the base match and select statements. If we want volume from the base asset,
+	//	we need to look at the base_amount. If we want volume to, we look at the counter_amount.
 	assetType := "counter"
 	if volumeFrom {
 		assetType = "base"
@@ -21,10 +42,8 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startLedger, endLedger
 	baseAssetMatch := fmt.Sprintf("(B.asset_code=\"%s\" AND B.asset_issuer=\"%s\")", asset.Code, asset.Issuer)
 	baseAssetSelect := fmt.Sprintf("SUM(T.%s_amount)/10000000", assetType)
 
-	/*
-		Construct the counter match and select statements. If we want volume from the counter asset,
-		we need to look at the counter_amount. If we want volume to, we look at the base_amount.
-	*/
+	//	Construct the counter match and select statements. If we want volume from the counter asset,
+	//	we need to look at the counter_amount. If we want volume to, we look at the base_amount.
 	assetType = "base"
 	if volumeFrom {
 		assetType = "counter"
@@ -68,27 +87,4 @@ func createVolumeQuery(asset Asset, volumeFrom bool, startLedger, endLedger stri
 
 	query += fmt.Sprintf(" GROUP BY seq ORDER BY seq ASC LIMIT %d", queryLimit)
 	return query
-}
-
-// RunVolumeQuery queries BigQuery for the volume of assets over the specified corridor and returns the results
-func RunVolumeQuery(asset Asset, volumeFrom bool, startLedger, endLedger string, client *bigquery.Client) ([]VolumeResult, error) {
-	query := createVolumeQuery(asset, volumeFrom, startLedger, endLedger)
-	it, err := runQuery(query, client)
-	if err != nil {
-		return nil, fmt.Errorf("error running query \n%s\n%v", query, err)
-	}
-
-	var results []VolumeResult
-	for {
-		var res VolumeResult
-		if err := it.Next(&res); err == iterator.Done {
-			break
-		} else if err != nil {
-			return nil, fmt.Errorf("error parsing results from query: %v", err)
-		}
-
-		results = append(results, res)
-	}
-
-	return results, nil
 }

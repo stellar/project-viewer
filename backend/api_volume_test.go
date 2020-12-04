@@ -6,10 +6,9 @@ import (
 	"testing"
 )
 
-var volumeToNGNT = "/volume?code=NGNT&issuer=GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD"
-var volumeFromCENTUS = "/volume?code=CENTUS&issuer=GAKMVPHBET4T7DPN32ODVSI4AA3YEZX2GHGNNSBGFNRQ6QEVKFO4MNDZ&volumeFrom=true"
-
 func TestVolumeHandler(t *testing.T) {
+	var volumeToNGNT = "/volume?code=NGNT&issuer=GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD"
+	var volumeFromCENTUS = "/volume?code=CENTUS&issuer=GAKMVPHBET4T7DPN32ODVSI4AA3YEZX2GHGNNSBGFNRQ6QEVKFO4MNDZ&volumeFrom=true"
 	tests := []queryTest{
 		{
 			name:           "volumeTo full history",
