@@ -1,41 +1,15 @@
 package backend
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
-	"path"
 
-	"cloud.google.com/go/bigquery"
 	"github.com/stellar/project-viewer/internal/queries"
-	"google.golang.org/api/option"
 )
 
 const projectID = "test-project-291320"
 const keyFileName = "testingKey.json"
-
-var client *bigquery.Client
-
-func getBigQueryClient() (*bigquery.Client, error) {
-	if client != nil {
-		return client, nil
-	}
-
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
-	newClient, err := bigquery.NewClient(context.Background(), projectID, option.WithCredentialsFile(path.Join(currentDir, keyFileName)))
-	if err != nil {
-		return nil, err
-	}
-
-	client = newClient
-	return client, nil
-}
 
 // CorridorHandler processes the source and destination assets, makes a BigQuery query, and returns the results
 func CorridorHandler() http.Handler {
