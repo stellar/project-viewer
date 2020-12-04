@@ -3,6 +3,7 @@ package queries
 import (
 	"fmt"
 
+	"cloud.google.com/go/bigquery"
 	"google.golang.org/api/iterator"
 )
 
@@ -10,12 +11,8 @@ import (
 // The volume is calculated by looking at trades involving the assetswithin the provided ledger range.
 func createVolumeTradeQuery(asset Asset, volumeFrom bool, startLedger, endLedger string) string {
 	/*
-		if asset is base
-			if vfrom: we want base_emount
-			if not vfrom: we want counter amount
-		if asset is counter:
-			if vfrom: counter amount
-			if not vfrom: base amount
+		Construct the base match and select statements. If we want volume from the base asset,
+		we need to look at the base_amount. If we want volume to, we look at the counter_amount.
 	*/
 	assetType := "counter"
 	if volumeFrom {
@@ -24,25 +21,30 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startLedger, endLedger
 	baseAssetMatch := fmt.Sprintf("(B.asset_code=\"%s\" AND B.asset_issuer=\"%s\")", asset.Code, asset.Issuer)
 	baseAssetSelect := fmt.Sprintf("SUM(T.%s_amount)/10000000", assetType)
 
+	/*
+		Construct the counter match and select statements. If we want volume from the counter asset,
+		we need to look at the counter_amount. If we want volume to, we look at the base_amount.
+	*/
 	assetType = "base"
 	if volumeFrom {
 		assetType = "counter"
 	}
-	counterAssetMatch := fmt.Sprintf("(C.asset_code=\"%s\" AND C.asset_issuer=\"%s\")", asset.Code, asset.Issuer)
+	counterAssetMatch := fmt.Sprintf("C.asset_code=\"%s\" AND C.asset_issuer=\"%s\"", asset.Code, asset.Issuer)
 	counterAssetSelect := fmt.Sprintf("SUM(T.%s_amount)/10000000", assetType)
 
-	query := fmt.Sprintf("SELECT L.sequence AS seq, CASE WHEN %s THEN %s ELSE WHEN %s THEN %s END as volume,",
+	query := fmt.Sprintf("SELECT L.sequence AS seq, CASE WHEN %s THEN %s WHEN %s THEN %s END as volume,",
 		baseAssetMatch, baseAssetSelect, counterAssetMatch, counterAssetSelect)
 	query += " FROM `crypto-stellar.crypto_stellar.history_trades` T"
 	query += " JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id"
 	query += " JOIN `crypto-stellar.crypto_stellar.history_assets` C ON C.id=T.counter_asset_id"
 	query += " JOIN `crypto-stellar.crypto_stellar.history_ledgers` L ON L.closed_at=T.ledger_closed_at"
+	query += fmt.Sprintf(" WHERE (%s OR %s)", baseAssetMatch, counterAssetMatch)
 
 	if startLedger != "" && endLedger != "" {
-		query += fmt.Sprintf(" AND ledger_sequence BETWEEN %s AND %s", startLedger, endLedger)
+		query += fmt.Sprintf(" AND L.sequence BETWEEN %s AND %s", startLedger, endLedger)
 	}
 
-	query += fmt.Sprintf(" GROUP BY seq ORDER BY seq ASC LIMIT %d", queryLimit)
+	query += fmt.Sprintf(" GROUP BY seq, B.asset_code, B.asset_issuer, C.asset_code, C.asset_issuer ORDER BY seq ASC LIMIT %d", queryLimit)
 	return query
 }
 
@@ -69,9 +71,9 @@ func createVolumeQuery(asset Asset, volumeFrom bool, startLedger, endLedger stri
 }
 
 // RunVolumeQuery queries BigQuery for the volume of assets over the specified corridor and returns the results
-func RunVolumeQuery(asset Asset, volumeFrom bool, startLedger, endLedger string) ([]VolumeResult, error) {
-	query := createVolumeTradeQuery(asset, volumeFrom, startLedger, endLedger)
-	it, err := runQuery(query)
+func RunVolumeQuery(asset Asset, volumeFrom bool, startLedger, endLedger string, client *bigquery.Client) ([]VolumeResult, error) {
+	query := createVolumeQuery(asset, volumeFrom, startLedger, endLedger)
+	it, err := runQuery(query, client)
 	if err != nil {
 		return nil, fmt.Errorf("error running query \n%s\n%v", query, err)
 	}
