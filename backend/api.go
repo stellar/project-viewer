@@ -1,4 +1,4 @@
-package projectviewer
+package backend
 
 import (
 	"encoding/json"
@@ -35,6 +35,44 @@ func CorridorHandler() http.Handler {
 		}
 
 		resultsMap := map[string][]queries.CorridorResult{
+			"results": results,
+		}
+
+		marshalled, err := json.Marshal(resultsMap)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		fmt.Fprintf(w, string(marshalled))
+	})
+}
+
+// VolumeHandler processes asset, makes a BigQuery query for the volume to or from that asset, and returns the results
+func VolumeHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		asset := queries.Asset{
+			Code:   r.FormValue("code"),
+			Issuer: r.FormValue("issuer"),
+		}
+
+		volumeFromParam := r.FormValue("volumeFrom")
+		volumeFrom := volumeFromParam != ""
+
+		startSeq := r.FormValue("start")
+		endSeq := r.FormValue("end")
+		if !asset.IsCompleteAsset() {
+			http.Error(w, "Please connect to this URL with parameters code and issuer", 400)
+			return
+		}
+
+		results, err := queries.RunVolumeQuery(asset, volumeFrom, startSeq, endSeq)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		resultsMap := map[string][]queries.VolumeResult{
 			"results": results,
 		}
 

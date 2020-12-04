@@ -1,4 +1,4 @@
-package projectviewer
+package backend
 
 import (
 	"flag"
