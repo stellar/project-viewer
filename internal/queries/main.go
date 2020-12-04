@@ -20,6 +20,12 @@ type CorridorResult struct {
 	Dest   float64 `json:"destinationSum"`
 }
 
+// VolumeResult is the result of a volume to/from query. It contains the volume for a given ledger sequence
+type VolumeResult struct {
+	Seq    int64   `json:"ledgerSequence"`
+	Volume float64 `json:"volume"`
+}
+
 // Asset represents an Asset with a code and Issuer
 type Asset struct {
 	Code   string
