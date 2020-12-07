@@ -11,9 +11,16 @@ import (
 const projectID = "test-project-291320"
 const keyFileName = "testingKey.json"
 
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+}
+
 // CorridorHandler processes the source and destination assets, makes a BigQuery query, and returns the results
 func CorridorHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		enableCors(&w)
 		source := queries.Asset{
 			Code:   r.FormValue("sourceCode"),
 			Issuer: r.FormValue("sourceIssuer"),
@@ -59,6 +66,7 @@ func CorridorHandler() http.Handler {
 // VolumeHandler processes asset, makes a BigQuery query for the volume to or from that asset, and returns the results
 func VolumeHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		enableCors(&w)
 		asset := queries.Asset{
 			Code:   r.FormValue("code"),
 			Issuer: r.FormValue("issuer"),
