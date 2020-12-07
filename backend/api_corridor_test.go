@@ -1,4 +1,4 @@
-package projectviewer
+package backend
 
 import (
 	"flag"
@@ -13,7 +13,6 @@ import (
 )
 
 var update = flag.Bool("update", false, "update the golden files of this test")
-var NGNTtoEURTparams = "/?sourceCode=NGNT&sourceIssuer=GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD&destCode=EURT&destIssuer=GAP5LETOV6YIE62YAM56STDANPRDO7ZFDBGSNHJQIYGGKSMOZAHOOS2S"
 
 type queryTest struct {
 	name           string
@@ -21,35 +20,38 @@ type queryTest struct {
 	w              *httptest.ResponseRecorder
 	expectedStatus int
 	golden         string
+	handler        http.Handler
 }
 
 func TestCorridorHandler(t *testing.T) {
+	var NGNTtoEURTCorridor = "/corridor?sourceCode=NGNT&sourceIssuer=GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD&destCode=EURT&destIssuer=GAP5LETOV6YIE62YAM56STDANPRDO7ZFDBGSNHJQIYGGKSMOZAHOOS2S"
 	tests := []queryTest{
 		{
 			name:           "full history query",
-			r:              httptest.NewRequest("GET", NGNTtoEURTparams, nil),
+			r:              httptest.NewRequest("GET", NGNTtoEURTCorridor, nil),
 			w:              httptest.NewRecorder(),
 			expectedStatus: http.StatusOK,
 			golden:         "NGNT_EURT_all.golden",
+			handler:        CorridorHandler(),
 		},
 		{
 			name:           "limited range query",
-			r:              httptest.NewRequest("GET", NGNTtoEURTparams+"&start=27839022&end=27839022", nil),
+			r:              httptest.NewRequest("GET", NGNTtoEURTCorridor+"&start=27839022&end=27839022", nil),
 			w:              httptest.NewRecorder(),
 			expectedStatus: http.StatusOK,
 			golden:         "NGNT_EURT_limited.golden",
+			handler:        CorridorHandler(),
 		},
 	}
 
 	for _, test := range tests {
-		runTest(t, test, "../testdata/")
+		runTest(t, test, "../testdata/corridor")
 	}
 }
 
 func runTest(t *testing.T, test queryTest, goldenFolder string) {
 	t.Run(test.name, func(t *testing.T) {
-		handler := CorridorHandler()
-		handler.ServeHTTP(test.w, test.r)
+		test.handler.ServeHTTP(test.w, test.r)
 
 		assert.Equal(t, test.expectedStatus, test.w.Code)
 		actualString := test.w.Body.String()
