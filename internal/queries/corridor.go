@@ -3,8 +3,32 @@ package queries
 import (
 	"fmt"
 
+	"cloud.google.com/go/bigquery"
 	"google.golang.org/api/iterator"
 )
+
+// RunCorridorQuery queries BigQuery for the volume of assets over the specified corridor and returns the results
+func RunCorridorQuery(source, dest Asset, startLedger, endLedger string, client *bigquery.Client) ([]CorridorResult, error) {
+	query := createCorridorQuery(source, dest, startLedger, endLedger)
+	it, err := runQuery(query, client)
+	if err != nil {
+		return nil, fmt.Errorf("error running query \n%s\n%v", query, err)
+	}
+
+	var results []CorridorResult
+	for {
+		var res CorridorResult
+		if err := it.Next(&res); err == iterator.Done {
+			break
+		} else if err != nil {
+			return nil, fmt.Errorf("error parsing results from query: %v", err)
+		}
+
+		results = append(results, res)
+	}
+
+	return results, nil
+}
 
 // createCorridorQuery returns a query that gets the total source and destination volume through the corridor, grouped by ledger.
 // The volume is calculated by looking at trades between the two assets within the provided ledger range.
@@ -42,27 +66,4 @@ func createCorridorQuery(source, dest Asset, startLedger, endLedger string) stri
 
 	query += fmt.Sprintf(" GROUP BY seq ORDER BY seq ASC LIMIT %d", queryLimit)
 	return query
-}
-
-// RunCorridorQuery queries BigQuery for the volume of assets over the specified corridor and returns the results
-func RunCorridorQuery(source, dest Asset, startLedger, endLedger string) ([]CorridorResult, error) {
-	query := createCorridorQuery(source, dest, startLedger, endLedger)
-	it, err := runQuery(query)
-	if err != nil {
-		return nil, fmt.Errorf("error running query \n%s\n%v", query, err)
-	}
-
-	var results []CorridorResult
-	for {
-		var res CorridorResult
-		if err := it.Next(&res); err == iterator.Done {
-			break
-		} else if err != nil {
-			return nil, fmt.Errorf("error parsing results from query: %v", err)
-		}
-
-		results = append(results, res)
-	}
-
-	return results, nil
 }
