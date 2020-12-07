@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import LabelledInput from '../LabelledInput/LabelledInput';
 import getCorridorInfo from '../../../api/getCorridorInfo'
+import getVolumeInfo from '../../../api/getVolumeInfo';
 class Form extends Component {
   constructor(props) {
     super(props);
@@ -27,10 +28,18 @@ class Form extends Component {
 
   handleSubmit(event) {
     console.log("Submitting with params: ", this.state)
-    getCorridorInfo(this.props.baseUrl, this.state.fromCode, this.state.fromIssuer, this.state.toCode, this.state.toIssuer).then(response => {
-      console.log(response)
-      return response
-    }).then(response => {this.props.handler(response)})
+    if (this.state.fromCode !== ""  && this.state.fromIssuer !== "" && this.state.toCode !== "" && this.state.toIssuer !== "") {
+      getCorridorInfo(this.props.baseUrl, this.state.fromCode, this.state.fromIssuer, this.state.toCode, this.state.toIssuer).then(
+        response => {this.props.handler(response)})
+    } else if (this.state.fromCode !== ""  && this.state.fromIssuer !== "" && this.state.toCode === "" && this.state.toIssuer === "") {
+      getVolumeInfo(this.props.baseUrl, this.state.fromCode, this.state.fromIssuer, "true").then(
+        response => {this.props.handler(response)})
+    } else if (this.state.fromCode === ""  && this.state.fromIssuer === "" && this.state.toCode !== "" && this.state.toIssuer !== "") {
+      getVolumeInfo(this.props.baseUrl, this.state.toCode, this.state.toIssuer, "").then(
+        response => {this.props.handler(response)})
+    } else {
+      return {"results": "parameters are malformed"}
+    }
     event.preventDefault();
   }
 
