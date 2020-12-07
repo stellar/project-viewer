@@ -8,9 +8,16 @@ import (
 	"github.com/stellar/project-viewer/internal/queries"
 )
 
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+}
+
 // CorridorHandler processes the source and destination assets, makes a BigQuery query, and returns the results
 func CorridorHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		enableCors(&w)
 		source := queries.Asset{
 			Code:   r.FormValue("sourceCode"),
 			Issuer: r.FormValue("sourceIssuer"),
