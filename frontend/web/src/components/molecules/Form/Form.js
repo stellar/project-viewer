@@ -29,27 +29,35 @@ class Form extends Component {
   handleSubmit(event) {
     console.log("Submitting with params: ", this.state)
     if (this.state.fromCode !== ""  && this.state.fromIssuer !== "" && this.state.toCode !== "" && this.state.toIssuer !== "") {
+      console.log(`Finding volume between ${this.state.fromCode}->${this.state.toCode}`)
+
       getCorridorInfo(this.props.baseUrl, this.state.fromCode, this.state.fromIssuer, this.state.toCode, this.state.toIssuer).then(
         response => {this.props.handler(response)})
+
     } else if (this.state.fromCode !== ""  && this.state.fromIssuer !== "" && this.state.toCode === "" && this.state.toIssuer === "") {
+      console.log(`Finding volume from ${this.state.fromCode}`)
+
       getVolumeInfo(this.props.baseUrl, this.state.fromCode, this.state.fromIssuer, "true").then(
         response => {this.props.handler(response)})
     } else if (this.state.fromCode === ""  && this.state.fromIssuer === "" && this.state.toCode !== "" && this.state.toIssuer !== "") {
+      console.log(`Finding volume to ${this.state.toCode}`)
+
       getVolumeInfo(this.props.baseUrl, this.state.toCode, this.state.toIssuer, "").then(
         response => {this.props.handler(response)})
     } else {
-      return {"results": "parameters are malformed"}
+       this.props.handler({"results": "parameters are malformed"})
     }
+
     event.preventDefault();
   }
 
   render() {
     return (
       <form onSubmit={this.handleSubmit}>
-            <LabelledInput title="From Code" id="fromCode" value={this.state.fromCode}/>
-            <LabelledInput title="From Issuer" id="fromIssuer" value={this.state.fromIssuer}/>
-            <LabelledInput title="To Code" id="toCode" value={this.state.toCode}/>
-            <LabelledInput title="To Issuer" id="toIssuer" value={this.state.toIssuer}/>
+            <LabelledInput title="From Code" id="fromCode" value={this.state.fromCode} changeHandler={this.handleChange}/>
+            <LabelledInput title="From Issuer" id="fromIssuer" value={this.state.fromIssuer} changeHandler={this.handleChange}/>
+            <LabelledInput title="To Code" id="toCode" value={this.state.toCode} changeHandler={this.handleChange}/>
+            <LabelledInput title="To Issuer" id="toIssuer" value={this.state.toIssuer} changeHandler={this.handleChange}/>
             <input type="submit" value="Submit"></input>
       </form>
     );
