@@ -8,7 +8,7 @@ import (
 	"github.com/stellar/project-viewer/internal/queries"
 )
 
-const projectID = "test-project-291320"
+const projectID = "hubble-261722"
 const keyFileName = "testingKey.json"
 
 func enableCors(w *http.ResponseWriter) {
