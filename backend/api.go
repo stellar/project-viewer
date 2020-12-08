@@ -106,3 +106,49 @@ func VolumeHandler() http.Handler {
 		fmt.Fprintf(w, string(marshalled))
 	})
 }
+
+// RateHandler processes the source and destination assets, makes a BigQuery query, and returns the results
+func RateHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		enableCors(&w)
+		source := queries.Asset{
+			Code:   r.FormValue("sourceCode"),
+			Issuer: r.FormValue("sourceIssuer"),
+		}
+
+		dest := queries.Asset{
+			Code:   r.FormValue("destCode"),
+			Issuer: r.FormValue("destIssuer"),
+		}
+
+		startSeq := r.FormValue("start")
+		endSeq := r.FormValue("end")
+		if !source.IsCompleteAsset() || !dest.IsCompleteAsset() {
+			http.Error(w, "Please connect to this URL with parameters sourceCode, sourceIssuer, destCode, destIssuer", 400)
+			return
+		}
+
+		client, err := getBigQueryClient()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error creating BigQuery client: %s", err), 500)
+		}
+
+		results, err := queries.RunRateQuery(source, dest, startSeq, endSeq, client)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		resultsMap := map[string][]queries.RateResult{
+			"results": results,
+		}
+
+		marshalled, err := json.Marshal(resultsMap)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		fmt.Fprintf(w, string(marshalled))
+	})
+}
