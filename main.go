@@ -14,6 +14,7 @@ func ServeMux() http.Handler {
 	mux.Handle("/corridor", backend.CorridorHandler())
 	mux.Handle("/volume", backend.VolumeHandler())
 	mux.Handle("/assets", backend.AssetHandler())
+	mux.Handle("/rate", backend.RateHandler())
 	return mux
 }
 
@@ -39,4 +40,9 @@ http://localhost:8080/volume?code=CENTUS&issuer=GAKMVPHBET4T7DPN32ODVSI4AA3YEZX2
 
 Assets:
 http://localhost:8080/assets
+
+Rates:
+http://localhost:8080/rate?sourceCode=NGNT&sourceIssuer=GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD&destCode=EURT&destIssuer=GAP5LETOV6YIE62YAM56STDANPRDO7ZFDBGSNHJQIYGGKSMOZAHOOS2S
+http://localhost:8080/rate?sourceCode=CENTUS&sourceIssuer=GAKMVPHBET4T7DPN32ODVSI4AA3YEZX2GHGNNSBGFNRQ6QEVKFO4MNDZ&destCode=USD&destIssuer=GB2O5PBQJDAFCNM2U2DIMVAEI7ISOYL4UJDTLN42JYYXAENKBWY6OBKZ
+
 */

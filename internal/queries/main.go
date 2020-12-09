@@ -21,6 +21,12 @@ type VolumeResult struct {
 	Volume float64 `json:"volume"`
 }
 
+// RateResult is the result of a rate query. It contains the rate between two assets for a given ledger sequence
+type RateResult struct {
+	Seq  int64   `json:"ledgerSequence"`
+	Rate float64 `json:"rate"`
+}
+
 // Asset represents an Asset with a code and Issuer
 type Asset struct {
 	Code   string
