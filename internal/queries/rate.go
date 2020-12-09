@@ -60,7 +60,7 @@ func createRateTradeQuery(source, dest Asset, startUnixTimestamp, endUnixTimesta
 		query += fmt.Sprintf(" AND L.closed_at BETWEEN TIMESTAMP_SECONDS(%s) AND TIMESTAMP_SECONDS(%s)", startUnixTimestamp, endUnixTimestamp)
 	}
 
-	query += fmt.Sprintf(" GROUP BY title, B.asset_code, B.asset_issuer, C.asset_code, C.asset_issuer ORDER BY L.sequence ASC LIMIT %d", queryLimit)
+	query += fmt.Sprintf(" GROUP BY title, B.asset_code, B.asset_issuer, C.asset_code, C.asset_issuer ORDER BY title ASC LIMIT %d", queryLimit)
 	return query
 }
 
@@ -75,7 +75,7 @@ func createRateQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp, a
 		dest.Code, dest.Issuer, source.Code, source.Issuer)
 
 	query := "WITH orderbooks AS ("
-	query += " SELECT FORMAT(\"Ledger %d\", E.ledger_id) AS title, E.ledger_id as seq, M.base_code, M.base_issuer, M.counter_code, M.counter_issuer,"
+	query += " SELECT FORMAT(\"Ledger %d\", E.ledger_id) AS title, M.base_code, M.base_issuer, M.counter_code, M.counter_issuer,"
 	query += ` ARRAY_AGG(CASE WHEN O.action="b" THEN O.price END IGNORE NULLS ORDER BY O.price DESC) AS bidPrices,`
 	query += ` ARRAY_AGG(CASE WHEN O.action="s" THEN O.price END IGNORE NULLS ORDER BY O.price ASC) AS askPrices,`
 	query += " FROM `hubble-261722.liquidity_data.fact_offer_events` AS E"
@@ -88,7 +88,7 @@ func createRateQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp, a
 		query += fmt.Sprintf(" AND L.closed_at BETWEEN TIMESTAMP_SECONDS(%s) AND TIMESTAMP_SECONDS(%s)", startUnixTimestamp, endUnixTimestamp)
 	}
 
-	query += " GROUP by title, seq, M.base_code, M.base_issuer, M.counter_code, M.counter_issuer)"
+	query += " GROUP by title, M.base_code, M.base_issuer, M.counter_code, M.counter_issuer)"
 
 	rateCalculation := "(orderbooks.askPrices[OFFSET(0)]+orderbooks.bidPrices[OFFSET(0)])/2"
 	baseIsSource := fmt.Sprintf("orderbooks.base_code=\"%s\" AND orderbooks.base_issuer=\"%s\"", source.Code, source.Issuer)
@@ -96,6 +96,6 @@ func createRateQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp, a
 	// if the base is not the source asset, then our rate is the reversed direction and so we must take the reciprocal
 	query += fmt.Sprintf(" SELECT orderbooks.title, CASE WHEN %s THEN %s ELSE 1/(%s) END as rate FROM orderbooks", baseIsSource, rateCalculation, rateCalculation)
 	query += fmt.Sprintf(" WHERE %s IS NOT NULL", rateCalculation)
-	query += fmt.Sprintf(" ORDER BY orderbooks.seq ASC LIMIT %d", queryLimit)
+	query += fmt.Sprintf(" ORDER BY orderbooks.title ASC LIMIT %d", queryLimit)
 	return query
 }

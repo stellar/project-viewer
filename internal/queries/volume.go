@@ -87,6 +87,6 @@ func createVolumeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnix
 		query += fmt.Sprintf(" AND closed_at BETWEEN TIMESTAMP_SECONDS(%s) AND TIMESTAMP_SECONDS(%s)", startUnixTimestamp, endUnixTimestamp)
 	}
 
-	query += fmt.Sprintf(" GROUP BY title ORDER BY ledger_sequence ASC LIMIT %d", queryLimit)
+	query += fmt.Sprintf(" GROUP BY title ORDER BY title ASC LIMIT %d", queryLimit)
 	return query
 }
