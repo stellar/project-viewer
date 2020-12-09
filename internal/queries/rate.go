@@ -31,7 +31,8 @@ func RunRateQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp strin
 }
 
 // createRateTradeQuery returns a query that gets the the rate between two assets, grouped by ledger.
-// The volume is calculated by looking at trades involving the assets within the provided ledger range.
+// The volume is calculated by looking at trades involving the assets within the timestamp range.
+// The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
 func createRateTradeQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp string) string {
 	// If the assets map as we expect (source -> base and dest -> counter), then the rate
 	// is the counter amount over the base amount. The rate convert from X source assets to Y dest assets
@@ -65,7 +66,8 @@ func createRateTradeQuery(source, dest Asset, startUnixTimestamp, endUnixTimesta
 
 // createRateQuery returns a query that gets the on-DEX rate between two assets, grouped by ledger.
 // The rate is calculated by looking at historical orderbooks. The average price of the highest bid
-// and the lowest ask are averaged to get the rate at each ledger.
+// and the lowest ask are averaged to get the rate at each ledger. The query calculates rates within the timestamp range.
+// The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
 func createRateQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp string) string {
 	normalMatch := fmt.Sprintf("(M.base_code=\"%s\" AND M.base_issuer=\"%s\" AND M.counter_code=\"%s\" AND M.counter_issuer=\"%s\")",
 		source.Code, source.Issuer, dest.Code, dest.Issuer)

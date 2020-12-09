@@ -31,7 +31,8 @@ func RunVolumeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTim
 }
 
 // createVolumeTradeQuery returns a query that gets the the total volume to/from an asset, grouped by ledger.
-// The volume is calculated by looking at trades involving the assetswithin the provided ledger range.
+// The volume is calculated by looking at trades involving the assets within the timestamp range.
+// The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
 func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTimestamp string) string {
 	//	Construct the base match and select statements. If we want volume from the base asset,
 	//	we need to look at the base_amount. If we want volume to, we look at the counter_amount.
@@ -69,7 +70,8 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, en
 
 // createVolumeQuery returns a query that gets the total volume to/from an asset, grouped by ledger.
 // If volumeFrom is true, then we get the volume from the asset.
-// The volume is calculated by looking at successful path payments involving the asset within the provided ledger range.
+// The volume is calculated by looking at successful path payments involving the asset within the timestamp range.
+// The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
 func createVolumeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTimestamp string) string {
 	equalityPrefix := ""
 	if volumeFrom {

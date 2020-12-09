@@ -31,7 +31,8 @@ func RunCorridorQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp s
 }
 
 // createCorridorQuery returns a query that gets the total source and destination volume through the corridor, grouped by ledger.
-// The volume is calculated by looking at trades between the two assets within the provided ledger range.
+// The volume is calculated by looking at trades between the two assets within the timestamp range.
+// The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
 func createCorridorTradeQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp string) string {
 	query := "SELECT L.sequence AS seq, SUM(T.base_amount)/10000000 as source, SUM(T.counter_amount)/10000000 as dest"
 	query += " FROM `crypto-stellar.crypto_stellar.history_trades` T"
@@ -54,7 +55,7 @@ func createCorridorTradeQuery(source, dest Asset, startUnixTimestamp, endUnixTim
 
 // createCorridorQuery returns a query that gets the total source and destination volume through the corridor, grouped by ledger.
 // The volume is calculated by looking at successful path payments that start from the source asset and end at the
-// destination asset within the provided ledger range.
+// destination asset within the timestamp range. The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
 func createCorridorQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp string) string {
 	query := "SELECT ledger_sequence as seq, SUM(source_amount) AS source, SUM(amount) AS dest FROM `crypto-stellar.crypto_stellar.enriched_history_operations` WHERE (type=2 OR type=13) AND successful=true"
 	query += " AND " +
