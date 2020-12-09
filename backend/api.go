@@ -31,8 +31,10 @@ func CorridorHandler() http.Handler {
 			Issuer: r.FormValue("destIssuer"),
 		}
 
-		startSeq := r.FormValue("start")
-		endSeq := r.FormValue("end")
+		// these start and end timestamps must be integers representing the number of seconds since the Unix epoch
+		startUnixTimestamp := r.FormValue("start")
+		endUnixTimestamp := r.FormValue("end")
+
 		if !source.IsCompleteAsset() || !dest.IsCompleteAsset() {
 			http.Error(w, "Please connect to this URL with parameters sourceCode, sourceIssuer, destCode, destIssuer", 400)
 			return
@@ -43,7 +45,7 @@ func CorridorHandler() http.Handler {
 			http.Error(w, fmt.Sprintf("Error creating BigQuery client: %s", err), 500)
 		}
 
-		results, err := queries.RunCorridorQuery(source, dest, startSeq, endSeq, client)
+		results, err := queries.RunCorridorQuery(source, dest, startUnixTimestamp, endUnixTimestamp, client)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
@@ -75,8 +77,10 @@ func VolumeHandler() http.Handler {
 		volumeFromParam := r.FormValue("volumeFrom")
 		volumeFrom := volumeFromParam != ""
 
-		startSeq := r.FormValue("start")
-		endSeq := r.FormValue("end")
+		// these start and end timestamps must be integers representing the number of seconds since the Unix epoch
+		startUnixTimestamp := r.FormValue("start")
+		endUnixTimestamp := r.FormValue("end")
+
 		if !asset.IsCompleteAsset() {
 			http.Error(w, "Please connect to this URL with parameters code and issuer", 400)
 			return
@@ -87,7 +91,7 @@ func VolumeHandler() http.Handler {
 			http.Error(w, fmt.Sprintf("Error creating BigQuery client: %s", err), 500)
 		}
 
-		results, err := queries.RunVolumeQuery(asset, volumeFrom, startSeq, endSeq, client)
+		results, err := queries.RunVolumeQuery(asset, volumeFrom, startUnixTimestamp, endUnixTimestamp, client)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
@@ -121,8 +125,10 @@ func RateHandler() http.Handler {
 			Issuer: r.FormValue("destIssuer"),
 		}
 
-		startSeq := r.FormValue("start")
-		endSeq := r.FormValue("end")
+		// these start and end timestamps must be integers representing the number of seconds since the Unix epoch
+		startUnixTimestamp := r.FormValue("start")
+		endUnixTimestamp := r.FormValue("end")
+
 		if !source.IsCompleteAsset() || !dest.IsCompleteAsset() {
 			http.Error(w, "Please connect to this URL with parameters sourceCode, sourceIssuer, destCode, destIssuer", 400)
 			return
@@ -133,7 +139,7 @@ func RateHandler() http.Handler {
 			http.Error(w, fmt.Sprintf("Error creating BigQuery client: %s", err), 500)
 		}
 
-		results, err := queries.RunRateQuery(source, dest, startSeq, endSeq, client)
+		results, err := queries.RunRateQuery(source, dest, startUnixTimestamp, endUnixTimestamp, client)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
