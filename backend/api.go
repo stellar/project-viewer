@@ -107,6 +107,27 @@ func VolumeHandler() http.Handler {
 	})
 }
 
+// AssetHandler processes the source and destination assets, makes a BigQuery query, and returns the results
+func AssetHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		enableCors(&w)
+
+		results := getAssets()
+
+		resultsMap := map[string][]aliasedAsset{
+			"results": results,
+		}
+
+		marshalled, err := json.Marshal(resultsMap)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		fmt.Fprintf(w, string(marshalled))
+	})
+}
+
 // RateHandler processes the source and destination assets, makes a BigQuery query, and returns the results
 func RateHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
