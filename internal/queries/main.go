@@ -10,21 +10,21 @@ const queryLimit = 100
 
 // CorridorResult is the result of a corridor query. It contains the source and destination volumes for a given ledger sequence
 type CorridorResult struct {
-	Seq    int64   `json:"ledgerSequence"`
+	Title  string  `json:"title"`
 	Source float64 `json:"sourceSum"`
 	Dest   float64 `json:"destinationSum"`
 }
 
 // VolumeResult is the result of a volume to/from query. It contains the volume for a given ledger sequence
 type VolumeResult struct {
-	Seq    int64   `json:"ledgerSequence"`
+	Title  string  `json:"title"`
 	Volume float64 `json:"volume"`
 }
 
 // RateResult is the result of a rate query. It contains the rate between two assets for a given ledger sequence
 type RateResult struct {
-	Seq  int64   `json:"ledgerSequence"`
-	Rate float64 `json:"rate"`
+	Title string  `json:"title"`
+	Rate  float64 `json:"rate"`
 }
 
 // Asset represents an Asset with a code and Issuer
