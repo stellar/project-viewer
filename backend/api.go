@@ -34,6 +34,7 @@ func CorridorHandler() http.Handler {
 		// these start and end timestamps must be integers representing the number of seconds since the Unix epoch
 		startUnixTimestamp := r.FormValue("start")
 		endUnixTimestamp := r.FormValue("end")
+		aggregateBy := r.FormValue("aggregateBy")
 
 		if !source.IsCompleteAsset() || !dest.IsCompleteAsset() {
 			http.Error(w, "Please connect to this URL with parameters sourceCode, sourceIssuer, destCode, destIssuer", 400)
@@ -45,7 +46,7 @@ func CorridorHandler() http.Handler {
 			http.Error(w, fmt.Sprintf("Error creating BigQuery client: %s", err), 500)
 		}
 
-		results, err := queries.RunCorridorQuery(source, dest, startUnixTimestamp, endUnixTimestamp, client)
+		results, err := queries.RunCorridorQuery(source, dest, startUnixTimestamp, endUnixTimestamp, aggregateBy, client)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
@@ -80,6 +81,7 @@ func VolumeHandler() http.Handler {
 		// these start and end timestamps must be integers representing the number of seconds since the Unix epoch
 		startUnixTimestamp := r.FormValue("start")
 		endUnixTimestamp := r.FormValue("end")
+		aggregateBy := r.FormValue("aggregateBy")
 
 		if !asset.IsCompleteAsset() {
 			http.Error(w, "Please connect to this URL with parameters code and issuer", 400)
@@ -91,7 +93,7 @@ func VolumeHandler() http.Handler {
 			http.Error(w, fmt.Sprintf("Error creating BigQuery client: %s", err), 500)
 		}
 
-		results, err := queries.RunVolumeQuery(asset, volumeFrom, startUnixTimestamp, endUnixTimestamp, client)
+		results, err := queries.RunVolumeQuery(asset, volumeFrom, startUnixTimestamp, endUnixTimestamp, aggregateBy, client)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
@@ -149,6 +151,7 @@ func RateHandler() http.Handler {
 		// these start and end timestamps must be integers representing the number of seconds since the Unix epoch
 		startUnixTimestamp := r.FormValue("start")
 		endUnixTimestamp := r.FormValue("end")
+		aggregateBy := r.FormValue("aggregateBy")
 
 		if !source.IsCompleteAsset() || !dest.IsCompleteAsset() {
 			http.Error(w, "Please connect to this URL with parameters sourceCode, sourceIssuer, destCode, destIssuer", 400)
@@ -160,7 +163,7 @@ func RateHandler() http.Handler {
 			http.Error(w, fmt.Sprintf("Error creating BigQuery client: %s", err), 500)
 		}
 
-		results, err := queries.RunRateQuery(source, dest, startUnixTimestamp, endUnixTimestamp, client)
+		results, err := queries.RunRateQuery(source, dest, startUnixTimestamp, endUnixTimestamp, aggregateBy, client)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
