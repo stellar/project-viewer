@@ -36,7 +36,7 @@ func TestCorridorHandler(t *testing.T) {
 		},
 		{
 			name:           "limited range query",
-			r:              httptest.NewRequest("GET", NGNTtoEURTCorridor+"&start=27839022&end=27839022", nil),
+			r:              httptest.NewRequest("GET", NGNTtoEURTCorridor+"&start=1579511535&end=1579511535", nil),
 			w:              httptest.NewRecorder(),
 			expectedStatus: http.StatusOK,
 			golden:         "NGNT_EURT_limited.golden",
