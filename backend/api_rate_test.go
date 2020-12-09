@@ -20,7 +20,7 @@ func TestRateHandler(t *testing.T) {
 		},
 		{
 			name:           "limited range query",
-			r:              httptest.NewRequest("GET", rateNGNTtoEURT+"&start=32214562&end=32215487", nil),
+			r:              httptest.NewRequest("GET", rateNGNTtoEURT+"&start=1603315973&end=1603320883", nil),
 			w:              httptest.NewRecorder(),
 			expectedStatus: http.StatusOK,
 			golden:         "NGNT_EURT_limited.golden",
@@ -28,7 +28,7 @@ func TestRateHandler(t *testing.T) {
 		},
 		{
 			name:           "reversed query (values should be reciprocal of above test)",
-			r:              httptest.NewRequest("GET", rateEURTtoNGNT+"&start=32214562&end=32215487", nil),
+			r:              httptest.NewRequest("GET", rateEURTtoNGNT+"&start=1603315973&end=1603320883", nil),
 			w:              httptest.NewRecorder(),
 			expectedStatus: http.StatusOK,
 			golden:         "EURT_NGNT_limited.golden",

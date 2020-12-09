@@ -20,7 +20,7 @@ func TestVolumeHandler(t *testing.T) {
 		},
 		{
 			name:           "volumeTo limited range",
-			r:              httptest.NewRequest("GET", volumeToNGNT+"&start=20304878&end=20492609", nil),
+			r:              httptest.NewRequest("GET", volumeToNGNT+"&start=1538627655&end=1539613972", nil),
 			w:              httptest.NewRecorder(),
 			expectedStatus: http.StatusOK,
 			golden:         "NGNT_limited.golden",
@@ -36,7 +36,7 @@ func TestVolumeHandler(t *testing.T) {
 		},
 		{
 			name:           "volumeFrom limited range",
-			r:              httptest.NewRequest("GET", volumeFromCENTUS+"&start=24334355&end=24799948", nil),
+			r:              httptest.NewRequest("GET", volumeFromCENTUS+"&start=1560474979&end=1562964992", nil),
 			w:              httptest.NewRecorder(),
 			expectedStatus: http.StatusOK,
 			golden:         "CENTUS_limited.golden",
