@@ -67,26 +67,32 @@ func createRateTradeQuery(source, dest Asset, startLedger, endLedger string) str
 // The rate is calculated by looking at historical orderbooks. The average price of the highest bid
 // and the lowest ask are averaged to get the rate at each ledger.
 func createRateQuery(source, dest Asset, startLedger, endLedger string) string {
-	assetMatch := fmt.Sprintf("(M.base_code=\"%s\" AND M.base_issuer=\"%s\" AND M.counter_code=\"%s\" AND M.counter_issuer=\"%s\")",
+	normalMatch := fmt.Sprintf("(M.base_code=\"%s\" AND M.base_issuer=\"%s\" AND M.counter_code=\"%s\" AND M.counter_issuer=\"%s\")",
 		source.Code, source.Issuer, dest.Code, dest.Issuer)
-	assetMatchTwo := fmt.Sprintf("(M.base_code=\"%s\" AND M.base_issuer=\"%s\" AND M.counter_code=\"%s\" AND M.counter_issuer=\"%s\")",
+	reverseMatch := fmt.Sprintf("(M.base_code=\"%s\" AND M.base_issuer=\"%s\" AND M.counter_code=\"%s\" AND M.counter_issuer=\"%s\")",
 		dest.Code, dest.Issuer, source.Code, source.Issuer)
+
 	query := "WITH orderbooks AS ("
-	query += ` SELECT E.ledger_id, ARRAY_AGG(CASE WHEN O.action="b" THEN STRUCT(O.horizon_offer_id, O.base_amount/10000000 AS base_amount, O.counter_amount/10000000 AS counter_amount, O.price) END IGNORE NULLS ORDER BY O.price DESC) AS bids,`
-	query += ` ARRAY_AGG(CASE WHEN O.action="s" THEN STRUCT(O.horizon_offer_id, O.base_amount/10000000 AS base_amount, O.counter_amount/10000000 AS counter_amount, O.price) END IGNORE NULLS ORDER BY O.price ASC) AS asks,`
+	query += " SELECT E.ledger_id, M.base_code, M.base_issuer, M.counter_code, M.counter_issuer,"
+	query += ` ARRAY_AGG(CASE WHEN O.action="b" THEN O.price END IGNORE NULLS ORDER BY O.price DESC) AS bidPrices,`
+	query += ` ARRAY_AGG(CASE WHEN O.action="s" THEN O.price END IGNORE NULLS ORDER BY O.price ASC) AS askPrices,`
 	query += " FROM `hubble-261722.liquidity_data.fact_offer_events` AS E"
 	query += " INNER JOIN `hubble-261722.liquidity_data.dim_offers` O ON (E.offer_instance_id = O.dim_offer_id)"
 	query += " INNER JOIN `hubble-261722.liquidity_data.dim_markets` M ON (O.market_id = M.market_id)"
-	query += fmt.Sprintf(" WHERE (%s OR %s)", assetMatch, assetMatchTwo)
+	query += fmt.Sprintf(" WHERE (%s OR %s)", normalMatch, reverseMatch)
 
 	if startLedger != "" && endLedger != "" {
 		query += fmt.Sprintf(" AND E.ledger_id BETWEEN %s AND %s", startLedger, endLedger)
 	}
 
-	query += " GROUP by E.ledger_id )"
+	query += " GROUP by E.ledger_id, M.base_code, M.base_issuer, M.counter_code, M.counter_issuer)"
 
-	query += " SELECT orderbooks.ledger_id as seq, (orderbooks.asks[OFFSET(0)].price+orderbooks.bids[OFFSET(0)].price)/2 as rate FROM orderbooks"
-	query += " WHERE (orderbooks.asks[OFFSET(0)].price+orderbooks.bids[OFFSET(0)].price)/2 IS NOT NULL"
+	rateCalculation := "(orderbooks.askPrices[OFFSET(0)]+orderbooks.bidPrices[OFFSET(0)])/2"
+	baseIsSource := fmt.Sprintf("orderbooks.base_code=\"%s\" AND orderbooks.base_issuer=\"%s\"", source.Code, source.Issuer)
+	
+	// if the base is not the source asset, then our rate is the reversed direction and so we must take the reciprocal
+	query += fmt.Sprintf(" SELECT orderbooks.ledger_id as seq, CASE WHEN %s THEN %s ELSE 1/(%s) END as rate FROM orderbooks", baseIsSource, rateCalculation, rateCalculation)
+	query += fmt.Sprintf(" WHERE %s IS NOT NULL", rateCalculation)
 	query += fmt.Sprintf(" ORDER BY seq ASC LIMIT %d", queryLimit)
 	return query
 }
