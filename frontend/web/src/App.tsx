@@ -4,7 +4,8 @@ import Form from "./components/molecules/Form/Form";
 import DataTable from "./components/molecules/DataTable/DataTable";
 
 class App extends Component {
-  constructor(props) {
+  // @ts-ignore
+  constructor(props: any) {
     super(props);
     this.state = {
       data: "",
@@ -12,6 +13,7 @@ class App extends Component {
     this.queryResultHandler = this.queryResultHandler.bind(this);
   }
 
+  // @ts-ignore
   queryResultHandler(response) {
     this.setState({
       data: JSON.stringify(response.results),
@@ -26,6 +28,7 @@ class App extends Component {
           handler={this.queryResultHandler}
           baseUrl="http://localhost:8080"
         />
+        {/* @ts-ignore */}
         <DataTable data={this.state.data} />
       </div>
     );
