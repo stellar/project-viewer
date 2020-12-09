@@ -8,6 +8,7 @@ import (
 
 func TestRateHandler(t *testing.T) {
 	var rateNGNTtoEURT = "/rate?sourceCode=NGNT&sourceIssuer=GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD&destCode=EURT&destIssuer=GAP5LETOV6YIE62YAM56STDANPRDO7ZFDBGSNHJQIYGGKSMOZAHOOS2S"
+	var rateEURTtoNGNT = "/rate?sourceCode=EURT&sourceIssuer=GAP5LETOV6YIE62YAM56STDANPRDO7ZFDBGSNHJQIYGGKSMOZAHOOS2S&destCode=NGNT&destIssuer=GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD"
 	tests := []queryTest{
 		{
 			name:           "full history query",
@@ -23,6 +24,14 @@ func TestRateHandler(t *testing.T) {
 			w:              httptest.NewRecorder(),
 			expectedStatus: http.StatusOK,
 			golden:         "NGNT_EURT_limited.golden",
+			handler:        RateHandler(),
+		},
+		{
+			name:           "reversed query (values should be reciprocal of above test)",
+			r:              httptest.NewRequest("GET", rateEURTtoNGNT+"&start=32214562&end=32215487", nil),
+			w:              httptest.NewRecorder(),
+			expectedStatus: http.StatusOK,
+			golden:         "EURT_NGNT_limited.golden",
 			handler:        RateHandler(),
 		},
 	}
