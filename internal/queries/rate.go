@@ -47,9 +47,10 @@ func createRateTradeQuery(source, dest Asset, startUnixTimestamp, endUnixTimesta
 	counterAssetMatch := fmt.Sprintf("((C.asset_code=\"%s\" AND C.asset_issuer=\"%s\") OR (B.asset_code=\"%s\" AND B.asset_issuer=\"%s\"))",
 		source.Code, source.Issuer, dest.Code, dest.Issuer)
 	counterAssetSelect := "SUM(T.base_amount)/SUM(T.counter_amount)"
+	titleField := getTitleField("L.sequence", "L.closed_at", aggregateBy)
 
-	query := "SELECT FORMAT(\"Ledger %d\", L.sequence) AS title," + fmt.Sprintf(" CASE WHEN %s THEN %s WHEN %s THEN %s END as rate,",
-		baseAssetMatch, baseAssetSelect, counterAssetMatch, counterAssetSelect)
+	query := fmt.Sprintf("SELECT %s CASE WHEN %s THEN %s WHEN %s THEN %s END as rate,",
+		titleField, baseAssetMatch, baseAssetSelect, counterAssetMatch, counterAssetSelect)
 	query += " FROM `crypto-stellar.crypto_stellar.history_trades` T"
 	query += " JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id"
 	query += " JOIN `crypto-stellar.crypto_stellar.history_assets` C ON C.id=T.counter_asset_id"
@@ -73,9 +74,10 @@ func createRateQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp, a
 		source.Code, source.Issuer, dest.Code, dest.Issuer)
 	reverseMatch := fmt.Sprintf("(M.base_code=\"%s\" AND M.base_issuer=\"%s\" AND M.counter_code=\"%s\" AND M.counter_issuer=\"%s\")",
 		dest.Code, dest.Issuer, source.Code, source.Issuer)
+	titleField := getTitleField("E.ledger_id", "L.closed_at", aggregateBy)
 
 	query := "WITH orderbooks AS ("
-	query += " SELECT FORMAT(\"Ledger %d\", E.ledger_id) AS title, M.base_code, M.base_issuer, M.counter_code, M.counter_issuer,"
+	query += fmt.Sprintf(" SELECT %s, M.base_code, M.base_issuer, M.counter_code, M.counter_issuer,", titleField)
 	query += ` ARRAY_AGG(CASE WHEN O.action="b" THEN O.price END IGNORE NULLS ORDER BY O.price DESC) AS bidPrices,`
 	query += ` ARRAY_AGG(CASE WHEN O.action="s" THEN O.price END IGNORE NULLS ORDER BY O.price ASC) AS askPrices,`
 	query += " FROM `hubble-261722.liquidity_data.fact_offer_events` AS E"

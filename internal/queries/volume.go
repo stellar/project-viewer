@@ -40,6 +40,7 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, en
 	if volumeFrom {
 		assetType = "base"
 	}
+
 	baseAssetMatch := fmt.Sprintf("(B.asset_code=\"%s\" AND B.asset_issuer=\"%s\")", asset.Code, asset.Issuer)
 	baseAssetSelect := fmt.Sprintf("SUM(T.%s_amount)/10000000", assetType)
 
@@ -49,11 +50,14 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, en
 	if volumeFrom {
 		assetType = "counter"
 	}
+
 	counterAssetMatch := fmt.Sprintf("C.asset_code=\"%s\" AND C.asset_issuer=\"%s\"", asset.Code, asset.Issuer)
 	counterAssetSelect := fmt.Sprintf("SUM(T.%s_amount)/10000000", assetType)
 
-	query := "SELECT FORMAT(\"Ledger %d\", L.sequence) AS title," + fmt.Sprintf(" CASE WHEN %s THEN %s WHEN %s THEN %s END as volume,",
-		baseAssetMatch, baseAssetSelect, counterAssetMatch, counterAssetSelect)
+	titleQuery := getTitleField("L.sequence", "L.closed_at", aggregateBy)
+
+	query := fmt.Sprintf("SELECT %s CASE WHEN %s THEN %s WHEN %s THEN %s END as volume,",
+		titleQuery, baseAssetMatch, baseAssetSelect, counterAssetMatch, counterAssetSelect)
 	query += " FROM `crypto-stellar.crypto_stellar.history_trades` T"
 	query += " JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id"
 	query += " JOIN `crypto-stellar.crypto_stellar.history_assets` C ON C.id=T.counter_asset_id"
@@ -78,7 +82,9 @@ func createVolumeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnix
 		equalityPrefix = "source_"
 	}
 
-	query := "SELECT FORMAT(\"Ledger %d\", ledger_sequence) AS title," + fmt.Sprintf(" SUM(%samount) AS volume", equalityPrefix)
+	titleQuery := getTitleField("ledger_sequence", "closed_at", aggregateBy)
+
+	query := fmt.Sprintf("SELECT %s, SUM(%samount) AS volume", titleQuery, equalityPrefix)
 	query += " FROM `crypto-stellar.crypto_stellar.enriched_history_operations` WHERE (type=2 OR type=13) AND successful=true"
 	query += " AND " +
 		fmt.Sprintf("(%sasset_code=\"%s\" AND %sasset_issuer=\"%s\")",

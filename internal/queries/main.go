@@ -2,6 +2,8 @@ package queries
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"cloud.google.com/go/bigquery"
 )
@@ -43,4 +45,15 @@ func runQuery(query string, client *bigquery.Client) (*bigquery.RowIterator, err
 	ctx := context.Background()
 	q := client.Query(query)
 	return q.Read(ctx)
+}
+
+func getTitleField(ledgerID, closedAt, aggregateBy string) string {
+	switch strings.ToLower(aggregateBy) {
+	case "day":
+		return fmt.Sprintf("DATE(%s) as title", closedAt)
+	case "week", "month", "quarter", "year":
+		return fmt.Sprintf("DATE_TRUNC(DATE(closed_at), %s) as title", strings.ToUpper(aggregateBy))
+	default:
+		return fmt.Sprintf("FORMAT(\"Ledger %%d\", %s) AS title", ledgerID)
+	}
 }

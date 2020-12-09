@@ -34,7 +34,8 @@ func RunCorridorQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp, 
 // The volume is calculated by looking at trades between the two assets within the timestamp range.
 // The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
 func createCorridorTradeQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp, aggregateBy string) string {
-	query := "SELECT FORMAT(\"Ledger %d\", L.sequence) AS title, SUM(T.base_amount)/10000000 as source, SUM(T.counter_amount)/10000000 as dest"
+	titleField := getTitleField("L.sequence", "closed_at", aggregateBy)
+	query := fmt.Sprintf("SELECT %s, SUM(T.base_amount)/10000000 as source, SUM(T.counter_amount)/10000000 as dest", titleField)
 	query += " FROM `crypto-stellar.crypto_stellar.history_trades` T"
 	query += " JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id"
 	query += " JOIN `crypto-stellar.crypto_stellar.history_assets` C ON C.id=T.counter_asset_id"
@@ -57,7 +58,9 @@ func createCorridorTradeQuery(source, dest Asset, startUnixTimestamp, endUnixTim
 // The volume is calculated by looking at successful path payments that start from the source asset and end at the
 // destination asset within the timestamp range. The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
 func createCorridorQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp, aggregateBy string) string {
-	query := "SELECT FORMAT(\"Ledger %d\", ledger_sequence) as title, SUM(source_amount) AS source, SUM(amount) AS dest FROM `crypto-stellar.crypto_stellar.enriched_history_operations` WHERE (type=2 OR type=13) AND successful=true"
+	titleField := getTitleField("ledger_sequence", "closed_at", aggregateBy)
+	query := fmt.Sprintf("SELECT %s, SUM(source_amount) AS source, SUM(amount) AS dest FROM `crypto-stellar.crypto_stellar.enriched_history_operations`", titleField)
+	query += " WHERE (type=2 OR type=13) AND successful=true"
 	query += " AND " +
 		fmt.Sprintf("(source_asset_code=\"%s\" AND source_asset_issuer=\"%s\" AND asset_code=\"%s\" AND asset_issuer=\"%s\")",
 			source.Code, source.Issuer, dest.Code, dest.Issuer)
