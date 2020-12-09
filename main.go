@@ -13,6 +13,7 @@ func ServeMux() http.Handler {
 	mux := chi.NewMux()
 	mux.Handle("/corridor", backend.CorridorHandler())
 	mux.Handle("/volume", backend.VolumeHandler())
+	mux.Handle("/assets", backend.AssetHandler())
 	return mux
 }
 
@@ -36,4 +37,6 @@ Volumes:
 http://localhost:8080/volume?code=NGNT&issuer=GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD
 http://localhost:8080/volume?code=CENTUS&issuer=GAKMVPHBET4T7DPN32ODVSI4AA3YEZX2GHGNNSBGFNRQ6QEVKFO4MNDZ&volumeFrom=true
 
+Assets:
+http://localhost:8080/assets
 */

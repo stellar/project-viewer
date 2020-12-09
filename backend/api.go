@@ -106,3 +106,24 @@ func VolumeHandler() http.Handler {
 		fmt.Fprintf(w, string(marshalled))
 	})
 }
+
+// AssetHandler processes the source and destination assets, makes a BigQuery query, and returns the results
+func AssetHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		enableCors(&w)
+
+		results := getAssets()
+
+		resultsMap := map[string][]aliasedAsset{
+			"results": results,
+		}
+
+		marshalled, err := json.Marshal(resultsMap)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		fmt.Fprintf(w, string(marshalled))
+	})
+}
