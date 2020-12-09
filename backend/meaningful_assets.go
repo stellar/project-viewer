@@ -125,7 +125,7 @@ func getAssets() []aliasedAsset {
 		aliasedAsset{
 			Code:   "FB",
 			Issuer: "GBRDHSZL4ZKOI2PTUMM53N3NICZXC5OX3KPCD4WD4NG4XGCBC2ZA3KAG",
-			Alias:  "v",
+			Alias:  "DSQ AG",
 		},
 		aliasedAsset{
 			Code:   "FTSE",
