@@ -8,8 +8,8 @@ import (
 )
 
 // RunVolumeQuery queries BigQuery for the volume of assets over the specified corridor and returns the results
-func RunVolumeQuery(asset Asset, volumeFrom bool, startLedger, endLedger string, client *bigquery.Client) ([]VolumeResult, error) {
-	query := createVolumeQuery(asset, volumeFrom, startLedger, endLedger)
+func RunVolumeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTimestamp string, client *bigquery.Client) ([]VolumeResult, error) {
+	query := createVolumeQuery(asset, volumeFrom, startUnixTimestamp, endUnixTimestamp)
 	it, err := runQuery(query, client)
 	if err != nil {
 		return nil, fmt.Errorf("error running query \n%s\n%v", query, err)
@@ -32,7 +32,7 @@ func RunVolumeQuery(asset Asset, volumeFrom bool, startLedger, endLedger string,
 
 // createVolumeTradeQuery returns a query that gets the the total volume to/from an asset, grouped by ledger.
 // The volume is calculated by looking at trades involving the assetswithin the provided ledger range.
-func createVolumeTradeQuery(asset Asset, volumeFrom bool, startLedger, endLedger string) string {
+func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTimestamp string) string {
 	//	Construct the base match and select statements. If we want volume from the base asset,
 	//	we need to look at the base_amount. If we want volume to, we look at the counter_amount.
 	assetType := "counter"
@@ -59,8 +59,8 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startLedger, endLedger
 	query += " JOIN `crypto-stellar.crypto_stellar.history_ledgers` L ON L.closed_at=T.ledger_closed_at"
 	query += fmt.Sprintf(" WHERE (%s OR %s)", baseAssetMatch, counterAssetMatch)
 
-	if startLedger != "" && endLedger != "" {
-		query += fmt.Sprintf(" AND L.sequence BETWEEN %s AND %s", startLedger, endLedger)
+	if startUnixTimestamp != "" && endUnixTimestamp != "" {
+		query += fmt.Sprintf(" AND L.closed_at BETWEEN TIMESTAMP_SECONDS(%s) AND TIMESTAMP_SECONDS(%s)", startUnixTimestamp, endUnixTimestamp)
 	}
 
 	query += fmt.Sprintf(" GROUP BY seq, B.asset_code, B.asset_issuer, C.asset_code, C.asset_issuer ORDER BY seq ASC LIMIT %d", queryLimit)
@@ -70,7 +70,7 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startLedger, endLedger
 // createVolumeQuery returns a query that gets the total volume to/from an asset, grouped by ledger.
 // If volumeFrom is true, then we get the volume from the asset.
 // The volume is calculated by looking at successful path payments involving the asset within the provided ledger range.
-func createVolumeQuery(asset Asset, volumeFrom bool, startLedger, endLedger string) string {
+func createVolumeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTimestamp string) string {
 	equalityPrefix := ""
 	if volumeFrom {
 		equalityPrefix = "source_"
@@ -81,8 +81,8 @@ func createVolumeQuery(asset Asset, volumeFrom bool, startLedger, endLedger stri
 	query += " AND " +
 		fmt.Sprintf("(%sasset_code=\"%s\" AND %sasset_issuer=\"%s\")",
 			equalityPrefix, asset.Code, equalityPrefix, asset.Issuer)
-	if startLedger != "" && endLedger != "" {
-		query += fmt.Sprintf(" AND ledger_sequence BETWEEN %s AND %s", startLedger, endLedger)
+	if startUnixTimestamp != "" && endUnixTimestamp != "" {
+		query += fmt.Sprintf(" AND closed_at BETWEEN TIMESTAMP_SECONDS(%s) AND TIMESTAMP_SECONDS(%s)", startUnixTimestamp, endUnixTimestamp)
 	}
 
 	query += fmt.Sprintf(" GROUP BY seq ORDER BY seq ASC LIMIT %d", queryLimit)

@@ -8,8 +8,8 @@ import (
 )
 
 // RunRateQuery queries BigQuery for the volume of assets over the specified corridor and returns the results
-func RunRateQuery(source, dest Asset, startLedger, endLedger string, client *bigquery.Client) ([]RateResult, error) {
-	query := createRateQuery(source, dest, startLedger, endLedger)
+func RunRateQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp string, client *bigquery.Client) ([]RateResult, error) {
+	query := createRateQuery(source, dest, startUnixTimestamp, endUnixTimestamp)
 	it, err := runQuery(query, client)
 	if err != nil {
 		return nil, fmt.Errorf("error running query \n%s\n%v", query, err)
@@ -32,7 +32,7 @@ func RunRateQuery(source, dest Asset, startLedger, endLedger string, client *big
 
 // createRateTradeQuery returns a query that gets the the rate between two assets, grouped by ledger.
 // The volume is calculated by looking at trades involving the assets within the provided ledger range.
-func createRateTradeQuery(source, dest Asset, startLedger, endLedger string) string {
+func createRateTradeQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp string) string {
 	// If the assets map as we expect (source -> base and dest -> counter), then the rate
 	// is the counter amount over the base amount. The rate convert from X source assets to Y dest assets
 	// so the units for the rate should be (dest/source = counter/base)
@@ -55,8 +55,8 @@ func createRateTradeQuery(source, dest Asset, startLedger, endLedger string) str
 	query += " JOIN `crypto-stellar.crypto_stellar.history_ledgers` L ON L.closed_at=T.ledger_closed_at"
 	query += fmt.Sprintf(" WHERE (%s OR %s)", baseAssetMatch, counterAssetMatch)
 
-	if startLedger != "" && endLedger != "" {
-		query += fmt.Sprintf(" AND L.sequence BETWEEN %s AND %s", startLedger, endLedger)
+	if startUnixTimestamp != "" && endUnixTimestamp != "" {
+		query += fmt.Sprintf(" AND L.closed_at BETWEEN TIMESTAMP_SECONDS(%s) AND TIMESTAMP_SECONDS(%s)", startUnixTimestamp, endUnixTimestamp)
 	}
 
 	query += fmt.Sprintf(" GROUP BY seq, B.asset_code, B.asset_issuer, C.asset_code, C.asset_issuer ORDER BY seq ASC LIMIT %d", queryLimit)
@@ -66,7 +66,7 @@ func createRateTradeQuery(source, dest Asset, startLedger, endLedger string) str
 // createRateQuery returns a query that gets the on-DEX rate between two assets, grouped by ledger.
 // The rate is calculated by looking at historical orderbooks. The average price of the highest bid
 // and the lowest ask are averaged to get the rate at each ledger.
-func createRateQuery(source, dest Asset, startLedger, endLedger string) string {
+func createRateQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp string) string {
 	normalMatch := fmt.Sprintf("(M.base_code=\"%s\" AND M.base_issuer=\"%s\" AND M.counter_code=\"%s\" AND M.counter_issuer=\"%s\")",
 		source.Code, source.Issuer, dest.Code, dest.Issuer)
 	reverseMatch := fmt.Sprintf("(M.base_code=\"%s\" AND M.base_issuer=\"%s\" AND M.counter_code=\"%s\" AND M.counter_issuer=\"%s\")",
@@ -78,18 +78,19 @@ func createRateQuery(source, dest Asset, startLedger, endLedger string) string {
 	query += ` ARRAY_AGG(CASE WHEN O.action="s" THEN O.price END IGNORE NULLS ORDER BY O.price ASC) AS askPrices,`
 	query += " FROM `hubble-261722.liquidity_data.fact_offer_events` AS E"
 	query += " INNER JOIN `hubble-261722.liquidity_data.dim_offers` O ON (E.offer_instance_id = O.dim_offer_id)"
-	query += " INNER JOIN `hubble-261722.liquidity_data.dim_markets` M ON (O.market_id = M.market_id)"
+	query += " INNER JOIN `hubble-261722.liquidity_data.dim_markets` M ON (M.market_id = O.market_id)"
+	query += " INNER JOIN `hubble-261722.crypto_stellar_internal.history_ledgers` L ON (L.sequence = E.ledger_id)"
 	query += fmt.Sprintf(" WHERE (%s OR %s)", normalMatch, reverseMatch)
 
-	if startLedger != "" && endLedger != "" {
-		query += fmt.Sprintf(" AND E.ledger_id BETWEEN %s AND %s", startLedger, endLedger)
+	if startUnixTimestamp != "" && endUnixTimestamp != "" {
+		query += fmt.Sprintf(" AND L.closed_at BETWEEN TIMESTAMP_SECONDS(%s) AND TIMESTAMP_SECONDS(%s)", startUnixTimestamp, endUnixTimestamp)
 	}
 
 	query += " GROUP by E.ledger_id, M.base_code, M.base_issuer, M.counter_code, M.counter_issuer)"
 
 	rateCalculation := "(orderbooks.askPrices[OFFSET(0)]+orderbooks.bidPrices[OFFSET(0)])/2"
 	baseIsSource := fmt.Sprintf("orderbooks.base_code=\"%s\" AND orderbooks.base_issuer=\"%s\"", source.Code, source.Issuer)
-	
+
 	// if the base is not the source asset, then our rate is the reversed direction and so we must take the reciprocal
 	query += fmt.Sprintf(" SELECT orderbooks.ledger_id as seq, CASE WHEN %s THEN %s ELSE 1/(%s) END as rate FROM orderbooks", baseIsSource, rateCalculation, rateCalculation)
 	query += fmt.Sprintf(" WHERE %s IS NOT NULL", rateCalculation)
