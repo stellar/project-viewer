@@ -50,9 +50,9 @@ func runQuery(query string, client *bigquery.Client) (*bigquery.RowIterator, err
 func getTitleField(ledgerID, closedAt, aggregateBy string) string {
 	switch strings.ToLower(aggregateBy) {
 	case "day":
-		return fmt.Sprintf("DATE(%s) as title", closedAt)
+		return fmt.Sprintf("FORMAT_DATE(\"%%Y/%%m/%%d\",DATE(%s)) as title", closedAt)
 	case "week", "month", "quarter", "year":
-		return fmt.Sprintf("DATE_TRUNC(DATE(closed_at), %s) as title", strings.ToUpper(aggregateBy))
+		return fmt.Sprintf("FORMAT_DATE(\"%%Y/%%m/%%d\", DATE_TRUNC(DATE(closed_at), %s)) as title", strings.ToUpper(aggregateBy))
 	default:
 		return fmt.Sprintf("FORMAT(\"Ledger %%d\", %s) AS title", ledgerID)
 	}
