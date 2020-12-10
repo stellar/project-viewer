@@ -3,7 +3,7 @@ module github.com/stellar/project-viewer
 go 1.14
 
 require (
-	cloud.google.com/go v0.72.0 // indirect
+	cloud.google.com/go v0.72.0
 	cloud.google.com/go/bigquery v1.13.0
 	cloud.google.com/go/storage v1.12.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

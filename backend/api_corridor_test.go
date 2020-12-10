@@ -2,6 +2,7 @@ package backend
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -44,9 +45,32 @@ func TestCorridorHandler(t *testing.T) {
 		},
 	}
 
+	for _, aggTest := range generateAggregateTests("NGNT_EURT", NGNTtoEURTCorridor, CorridorHandler()) {
+		tests = append(tests, aggTest)
+	}
+
 	for _, test := range tests {
 		runTest(t, test, "../testdata/corridor")
 	}
+
+}
+
+func generateAggregateTests(testBaseName, parameters string, handler http.Handler) []queryTest {
+	results := []queryTest{}
+	aggregateTypes := []string{"day", "week", "month", "quarter", "year"}
+	for _, aggType := range aggregateTypes {
+		newParams := fmt.Sprintf("%s&aggregateBy=%s", parameters, aggType)
+		results = append(results, queryTest{
+			name:           fmt.Sprintf("%s aggregate by %s", testBaseName, aggType),
+			r:              httptest.NewRequest("GET", newParams, nil),
+			w:              httptest.NewRecorder(),
+			expectedStatus: http.StatusOK,
+			golden:         fmt.Sprintf("%s_%s.golden", testBaseName, aggType),
+			handler:        handler,
+		})
+	}
+
+	return results
 }
 
 func runTest(t *testing.T, test queryTest, goldenFolder string) {
