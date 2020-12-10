@@ -36,6 +36,10 @@ func TestRateHandler(t *testing.T) {
 		},
 	}
 
+	for _, aggTest := range generateAggregateTests("NGNT_EURT", rateNGNTtoEURT, RateHandler()) {
+		tests = append(tests, aggTest)
+	}
+
 	for _, test := range tests {
 		runTest(t, test, "../testdata/rate")
 	}
