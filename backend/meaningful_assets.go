@@ -348,16 +348,6 @@ func getAssets() []aliasedAsset {
 			Alias:  "WhiteStandard",
 		},
 		aliasedAsset{
-			Code:   "BTC",
-			Issuer: "GAC63S3QEA5TKKGPLSLGCUSAFASDNO44XDWDNGLPM6UZSBLXA7W47JGZ",
-			Alias:  "XCM",
-		},
-		aliasedAsset{
-			Code:   "ETH",
-			Issuer: "GAC63S3QEA5TKKGPLSLGCUSAFASDNO44XDWDNGLPM6UZSBLXA7W47JGZ",
-			Alias:  "XCM",
-		},
-		aliasedAsset{
 			Code:   "TZS",
 			Issuer: "GA2MSSZKJOU6RNL3EJKH3S5TB5CDYTFQFWRYFGUJVIN5I6AOIRTLUHTO",
 			Alias:  "ClickPesa",
