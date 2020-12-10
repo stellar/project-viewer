@@ -47,6 +47,11 @@ func runQuery(query string, client *bigquery.Client) (*bigquery.RowIterator, err
 	return q.Read(ctx)
 }
 
+// getTitleField returns a clause of the form "*title_expression* AS title", which can be used in a SELECT statement
+// The title_expression depends on the aggregateBy string. If aggregateBy is "day", each title will be a different day.
+// If aggregateBy is "week" each title will be a different week. The function also supports "month", "quarter", and "year".
+// ledgerID should be the column containing the ledger sequence number. closedAt should be the column containing the ledger
+// close time.
 func getTitleField(ledgerID, closedAt, aggregateBy string) string {
 	switch strings.ToLower(aggregateBy) {
 	case "day":

@@ -34,8 +34,21 @@ func RunVolumeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTim
 // The volume is calculated by looking at trades involving the assets within the timestamp range.
 // The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
 func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTimestamp, aggregateBy string) string {
-	//	Construct the base match and select statements. If we want volume from the base asset,
-	//	we need to look at the base_amount. If we want volume to, we look at the counter_amount.
+	// A sample query is below:
+	// SELECT FORMAT("Ledger %d", L.sequence) AS title,
+	// CASE WHEN (B.asset_code="NGNT" AND B.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD") THEN SUM(T.counter_amount)/10000000
+	// WHEN C.asset_code="NGNT" AND C.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD" THEN SUM(T.base_amount)/10000000 END as volume,
+	// FROM `crypto-stellar.crypto_stellar.history_trades` T
+	// JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id
+	// JOIN `crypto-stellar.crypto_stellar.history_assets` C ON C.id=T.counter_asset_id
+	// JOIN `crypto-stellar.crypto_stellar.history_ledgers` L ON L.closed_at=T.ledger_closed_at
+	// WHERE ((B.asset_code="NGNT" AND B.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD") OR
+	// C.asset_code="NGNT" AND C.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD")
+	// GROUP BY title, B.asset_code, B.asset_issuer, C.asset_code, C.asset_issuer
+	// ORDER BY title ASC LIMIT 100
+
+	// Construct the base match and select statements. If we want volume from the base asset,
+	// we need to look at the base_amount. If we want volume to, we look at the counter_amount.
 	assetType := "counter"
 	if volumeFrom {
 		assetType = "base"
@@ -44,8 +57,8 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, en
 	baseAssetMatch := fmt.Sprintf("(B.asset_code=\"%s\" AND B.asset_issuer=\"%s\")", asset.Code, asset.Issuer)
 	baseAssetSelect := fmt.Sprintf("SUM(T.%s_amount)/10000000", assetType)
 
-	//	Construct the counter match and select statements. If we want volume from the counter asset,
-	//	we need to look at the counter_amount. If we want volume to, we look at the base_amount.
+	// Construct the counter match and select statements. If we want volume from the counter asset,
+	// we need to look at the counter_amount. If we want volume to, we look at the base_amount.
 	assetType = "base"
 	if volumeFrom {
 		assetType = "counter"
@@ -56,7 +69,7 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, en
 
 	titleQuery := getTitleField("L.sequence", "L.closed_at", aggregateBy)
 
-	query := fmt.Sprintf("SELECT %s CASE WHEN %s THEN %s WHEN %s THEN %s END as volume,",
+	query := fmt.Sprintf("SELECT %s, CASE WHEN %s THEN %s WHEN %s THEN %s END as volume,",
 		titleQuery, baseAssetMatch, baseAssetSelect, counterAssetMatch, counterAssetSelect)
 	query += " FROM `crypto-stellar.crypto_stellar.history_trades` T"
 	query += " JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id"
@@ -68,7 +81,7 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, en
 		query += fmt.Sprintf(" AND L.closed_at BETWEEN TIMESTAMP_SECONDS(%s) AND TIMESTAMP_SECONDS(%s)", startUnixTimestamp, endUnixTimestamp)
 	}
 
-	query += fmt.Sprintf(" GROUP BY title, B.asset_code, B.asset_issuer, C.asset_code, C.asset_issuer ORDER BY L.sequence ASC LIMIT %d", queryLimit)
+	query += fmt.Sprintf(" GROUP BY title, B.asset_code, B.asset_issuer, C.asset_code, C.asset_issuer ORDER BY title ASC LIMIT %d", queryLimit)
 	return query
 }
 
@@ -77,6 +90,11 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, en
 // The volume is calculated by looking at successful path payments involving the asset within the timestamp range.
 // The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
 func createVolumeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTimestamp, aggregateBy string) string {
+	// A sample query is below:
+	// SELECT FORMAT("Ledger %d", ledger_sequence) AS title, SUM(amount) AS volume FROM `crypto-stellar.crypto_stellar.enriched_history_operations`
+	// WHERE (type=2 OR type=13) AND successful=true AND (asset_code="NGNT" AND asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD")
+	// GROUP BY title ORDER BY title ASC LIMIT 100
+
 	equalityPrefix := ""
 	if volumeFrom {
 		equalityPrefix = "source_"
