@@ -1,0 +1,71 @@
+@mixin header-footer-inset {
+  height: 3rem;
+  display: flex;
+  align-items: center;
+}
+
+@mixin header-footer-vertical-padding {
+  @media (min-width: 700px) {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+}
+
+// TODO: fixes START
+
+body {
+  min-width: 320px;
+}
+
+.Select .SelectWrapper select {
+  padding: 0.55rem 2rem 0.55rem 0.75rem !important;
+}
+
+// END fixes
+
+.Inset {
+  position: relative;
+  margin: 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  width: 100%;
+  max-width: 1296px;
+
+  @media (min-width: 420px) {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
+.Header {
+  @include header-footer-vertical-padding;
+
+  .Inset {
+    @include header-footer-inset;
+    justify-content: space-between;
+  }
+}
+
+.Footer {
+  @include header-footer-vertical-padding;
+
+  .Inset {
+    @include header-footer-inset;
+
+    a:not(:last-child) {
+      margin-right: 1.5rem;
+    }
+  }
+}
+
+.Content {
+  flex-grow: 1;
+  flex-shrink: 0;
+}
+
+/* TODO: Component with props for bg and vertical padding */
+.Section {
+  background-color: var(--color-background-secondary);
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
