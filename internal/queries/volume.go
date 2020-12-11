@@ -30,6 +30,13 @@ func RunVolumeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTim
 	return results, nil
 }
 
+func createVolumeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTimestamp, aggregateBy string) string {
+	paymentQuery := createVolumePaymentQuery(asset, volumeFrom, startUnixTimestamp, endUnixTimestamp, aggregateBy)
+	tradeQuery := createVolumeTradeQuery(asset, volumeFrom, startUnixTimestamp, endUnixTimestamp, aggregateBy)
+
+	return createCombinedQuery(paymentQuery, tradeQuery)
+}
+
 // createVolumeTradeQuery returns a query that gets the the total volume to/from an asset, grouped by ledger.
 // The volume is calculated by looking at trades involving the assets within the timestamp range.
 // The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
@@ -69,7 +76,7 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, en
 
 	titleQuery := getTitleField("L.sequence", "L.closed_at", aggregateBy)
 
-	query := fmt.Sprintf("SELECT %s, CASE WHEN %s THEN %s WHEN %s THEN %s END as volume,",
+	query := fmt.Sprintf("SELECT %s, COUNT(history_operation_id) as count, CASE WHEN %s THEN %s WHEN %s THEN %s END as amount,",
 		titleQuery, baseAssetMatch, baseAssetSelect, counterAssetMatch, counterAssetSelect)
 	query += " FROM `crypto-stellar.crypto_stellar.history_trades` T"
 	query += " JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id"
@@ -85,11 +92,11 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, en
 	return query
 }
 
-// createVolumeQuery returns a query that gets the total volume to/from an asset, grouped by ledger.
+// createVolumePaymentQuery returns a query that gets the total volume to/from an asset.
 // If volumeFrom is true, then we get the volume from the asset.
 // The volume is calculated by looking at successful path payments involving the asset within the timestamp range.
 // The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
-func createVolumeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTimestamp, aggregateBy string) string {
+func createVolumePaymentQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTimestamp, aggregateBy string) string {
 	// A sample query is below:
 	// SELECT FORMAT("Ledger %d", ledger_sequence) AS title, SUM(amount) AS volume FROM `crypto-stellar.crypto_stellar.enriched_history_operations`
 	// WHERE (type=2 OR type=13) AND successful=true AND (asset_code="NGNT" AND asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD")
@@ -102,7 +109,7 @@ func createVolumeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnix
 
 	titleQuery := getTitleField("ledger_sequence", "closed_at", aggregateBy)
 
-	query := fmt.Sprintf("SELECT %s, SUM(%samount) AS volume", titleQuery, equalityPrefix)
+	query := fmt.Sprintf("SELECT %s, COUNT(op_id) as count, SUM(%samount) AS amount", titleQuery, equalityPrefix)
 	query += " FROM `crypto-stellar.crypto_stellar.enriched_history_operations` WHERE (type=2 OR type=13) AND successful=true"
 	query += " AND " +
 		fmt.Sprintf("(%sasset_code=\"%s\" AND %sasset_issuer=\"%s\")",
