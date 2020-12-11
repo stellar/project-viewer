@@ -1,0 +1,52 @@
+.TradeData {
+  padding-top: 3rem;
+
+  .TradeDataHeader {
+    padding-bottom: 3rem;
+  }
+
+  .TradeDataTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1rem;
+    line-height: 1.5rem;
+    color: var(--color-text);
+
+    th {
+      font-size: 0.875rem;
+      line-height: 1.125rem;
+      color: var(--color-note);
+      font-weight: var(--font-weight-medium);
+      text-transform: uppercase;
+      text-align: left;
+      padding-bottom: 1.0625rem;
+    }
+
+    thead,
+    tr:not(:last-child) {
+      border-bottom: 1px solid var(--color-border-main);
+    }
+
+    th,
+    td {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+      vertical-align: top;
+    }
+
+    th:first-child,
+    td:first-child {
+      padding-left: 0;
+    }
+
+    th:last-child,
+    td:last-child {
+      padding-right: 0;
+    }
+
+    td {
+      padding-top: 1.5rem;
+      padding-bottom: 1.5rem;
+    }
+  }
+}
