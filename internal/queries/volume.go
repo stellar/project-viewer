@@ -30,7 +30,7 @@ func RunVolumeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTim
 	return results, nil
 }
 
-// createCorridorQuery creates a query that combines the volume trade query and volume payment query
+// createVolumeQuery creates a query that combines the volume trade query and volume payment query
 func createVolumeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTimestamp, aggregateBy string) string {
 	paymentQuery := createVolumePaymentQuery(asset, volumeFrom, startUnixTimestamp, endUnixTimestamp, aggregateBy)
 	tradeQuery := createVolumeTradeQuery(asset, volumeFrom, startUnixTimestamp, endUnixTimestamp, aggregateBy)
@@ -99,7 +99,7 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, en
 // The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
 func createVolumePaymentQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTimestamp, aggregateBy string) string {
 	// A sample query is below:
-	// SELECT FORMAT("Ledger %d", ledger_sequence) AS title, COUNT(op_id) AS count, SUM(amount) AS amount 
+	// SELECT FORMAT("Ledger %d", ledger_sequence) AS title, COUNT(op_id) AS count, SUM(amount) AS amount
 	// FROM `crypto-stellar.crypto_stellar.enriched_history_operations`
 	// WHERE (type=2 OR type=13) AND successful=true AND (asset_code="NGNT" AND asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD")
 	// GROUP BY title ORDER BY title ASC LIMIT 100
