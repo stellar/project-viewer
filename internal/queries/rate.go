@@ -39,7 +39,7 @@ func createRateTradeQuery(source, dest Asset, startUnixTimestamp, endUnixTimesta
 	// CASE WHEN ((B.asset_code="NGNT" AND B.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD") OR
 	// (C.asset_code="EURT" AND C.asset_issuer="GAP5LETOV6YIE62YAM56STDANPRDO7ZFDBGSNHJQIYGGKSMOZAHOOS2S")) THEN SUM(T.counter_amount)/SUM(T.base_amount)
 	// WHEN ((C.asset_code="NGNT" AND C.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD") OR
-	// (B.asset_code="EURT" AND B.asset_issuer="GAP5LETOV6YIE62YAM56STDANPRDO7ZFDBGSNHJQIYGGKSMOZAHOOS2S")) THEN SUM(T.base_amount)/SUM(T.counter_amount) END as rate,
+	// (B.asset_code="EURT" AND B.asset_issuer="GAP5LETOV6YIE62YAM56STDANPRDO7ZFDBGSNHJQIYGGKSMOZAHOOS2S")) THEN SUM(T.base_amount)/SUM(T.counter_amount) END AS rate,
 	// FROM `crypto-stellar.crypto_stellar.history_trades` T
 	// JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id
 	// JOIN `crypto-stellar.crypto_stellar.history_assets` C ON C.id=T.counter_asset_id
@@ -66,7 +66,7 @@ func createRateTradeQuery(source, dest Asset, startUnixTimestamp, endUnixTimesta
 	counterAssetSelect := "SUM(T.base_amount)/SUM(T.counter_amount)"
 	titleField := getTitleField("L.sequence", "L.closed_at", aggregateBy)
 
-	query := fmt.Sprintf("SELECT %s, CASE WHEN %s THEN %s WHEN %s THEN %s END as rate,",
+	query := fmt.Sprintf("SELECT %s, CASE WHEN %s THEN %s WHEN %s THEN %s END AS rate,",
 		titleField, baseAssetMatch, baseAssetSelect, counterAssetMatch, counterAssetSelect)
 	query += " FROM `crypto-stellar.crypto_stellar.history_trades` T"
 	query += " JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id"
@@ -102,7 +102,7 @@ func createRateQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp, a
 	// )
 	// SELECT orderbooks.title, CASE WHEN orderbooks.base_code="NGNT" AND orderbooks.base_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD"
 	// THEN (orderbooks.askPrices[OFFSET(0)]+orderbooks.bidPrices[OFFSET(0)])/2
-	// ELSE 1/((orderbooks.askPrices[OFFSET(0)]+orderbooks.bidPrices[OFFSET(0)])/2) END as rate
+	// ELSE 1/((orderbooks.askPrices[OFFSET(0)]+orderbooks.bidPrices[OFFSET(0)])/2) END AS rate
 	// FROM orderbooks WHERE (orderbooks.askPrices[OFFSET(0)]+orderbooks.bidPrices[OFFSET(0)])/2 IS NOT NULL
 	// ORDER BY orderbooks.title ASC LIMIT 100
 
@@ -132,7 +132,7 @@ func createRateQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp, a
 	baseIsSource := fmt.Sprintf("orderbooks.base_code=\"%s\" AND orderbooks.base_issuer=\"%s\"", source.Code, source.Issuer)
 
 	// if the base is not the source asset, then our rate is the reversed direction and so we must take the reciprocal
-	query += fmt.Sprintf(" SELECT orderbooks.title, CASE WHEN %s THEN %s ELSE 1/(%s) END as rate FROM orderbooks", baseIsSource, rateCalculation, rateCalculation)
+	query += fmt.Sprintf(" SELECT orderbooks.title, CASE WHEN %s THEN %s ELSE 1/(%s) END AS rate FROM orderbooks", baseIsSource, rateCalculation, rateCalculation)
 	query += fmt.Sprintf(" WHERE %s IS NOT NULL", rateCalculation)
 	query += fmt.Sprintf(" ORDER BY orderbooks.title ASC LIMIT %d", queryLimit)
 	return query
