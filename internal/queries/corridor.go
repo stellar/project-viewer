@@ -30,6 +30,7 @@ func RunCorridorQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp, 
 	return results, nil
 }
 
+// createCorridorQuery creates a query that combines the corridor trade query and corridor payment query
 func createCorridorQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp, aggregateBy string) string {
 	paymentQuery := createCorridorPaymentQuery(source, dest, startUnixTimestamp, endUnixTimestamp, aggregateBy)
 	tradeQuery := createCorridorTradeQuery(source, dest, startUnixTimestamp, endUnixTimestamp, aggregateBy)
@@ -42,7 +43,11 @@ func createCorridorQuery(source, dest Asset, startUnixTimestamp, endUnixTimestam
 // The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
 func createCorridorTradeQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp, aggregateBy string) string {
 	// A sample query is:
-	// SELECT FORMAT("Ledger %d", L.sequence) AS title, SUM(T.base_amount)/10000000 as source, SUM(T.counter_amount)/10000000 as dest
+	// SELECT FORMAT("Ledger %d", L.sequence) AS title, COUNT(history_operation_id) AS count,
+	// CASE WHEN (B.asset_code="NGNT" AND B.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD")
+	// 		THEN SUM(T.base_amount)/10000000
+	// WHEN C.asset_code="NGNT" AND C.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD"
+	// 		THEN SUM(T.counter_amount)/10000000 END AS amount
 	// FROM `crypto-stellar.crypto_stellar.history_trades` T
 	// JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id
 	// JOIN `crypto-stellar.crypto_stellar.history_assets` C ON C.id=T.counter_asset_id
@@ -62,7 +67,7 @@ func createCorridorTradeQuery(source, dest Asset, startUnixTimestamp, endUnixTim
 	counterAssetSelect := "SUM(T.counter_amount)/10000000"
 
 	titleField := getTitleField("L.sequence", "closed_at", aggregateBy)
-	query := fmt.Sprintf("SELECT %s, COUNT(history_operation_id) as count, CASE WHEN %s THEN %s WHEN %s THEN %s END AS amount ", titleField, baseAssetMatch, baseAssetSelect, counterAssetMatch, counterAssetSelect)
+	query := fmt.Sprintf("SELECT %s, COUNT(history_operation_id) AS count, CASE WHEN %s THEN %s WHEN %s THEN %s END AS amount ", titleField, baseAssetMatch, baseAssetSelect, counterAssetMatch, counterAssetSelect)
 	query += " FROM `crypto-stellar.crypto_stellar.history_trades` T"
 	query += " JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id"
 	query += " JOIN `crypto-stellar.crypto_stellar.history_assets` C ON C.id=T.counter_asset_id"
@@ -86,14 +91,14 @@ func createCorridorTradeQuery(source, dest Asset, startUnixTimestamp, endUnixTim
 // destination asset within the timestamp range. The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
 func createCorridorPaymentQuery(source, dest Asset, startUnixTimestamp, endUnixTimestamp, aggregateBy string) string {
 	// A sample query is below:
-	// SELECT FORMAT("Ledger %d", ledger_sequence) AS title, SUM(source_amount) AS source, SUM(amount) AS dest FROM
+	// SELECT FORMAT("Ledger %d", ledger_sequence) AS title, COUNT(op_id) AS count, SUM(source_amount) AS amount, SUM(amount) AS dest FROM
 	// `crypto-stellar.crypto_stellar.enriched_history_operations` WHERE (type=2 OR type=13) AND successful=true
 	// AND (source_asset_code="NGNT" AND source_asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD" AND asset_code="EURT"
 	// AND asset_issuer="GAP5LETOV6YIE62YAM56STDANPRDO7ZFDBGSNHJQIYGGKSMOZAHOOS2S")
 	// GROUP BY title ORDER BY title ASC LIMIT 100
 
 	titleField := getTitleField("ledger_sequence", "closed_at", aggregateBy)
-	query := fmt.Sprintf("SELECT %s, COUNT(op_id) as count, SUM(source_amount) AS amount, FROM `crypto-stellar.crypto_stellar.enriched_history_operations`", titleField)
+	query := fmt.Sprintf("SELECT %s, COUNT(op_id) AS count, SUM(source_amount) AS amount, FROM `crypto-stellar.crypto_stellar.enriched_history_operations`", titleField)
 	query += " WHERE (type=2 OR type=13) AND successful=true"
 	query += " AND " +
 		fmt.Sprintf("(source_asset_code=\"%s\" AND source_asset_issuer=\"%s\" AND asset_code=\"%s\" AND asset_issuer=\"%s\")",

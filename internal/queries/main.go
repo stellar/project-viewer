@@ -68,10 +68,11 @@ func getTitleField(ledgerID, closedAt, aggregateBy string) string {
 	}
 }
 
+// createCombinedQuery combines a payment query and a trade query
 func createCombinedQuery(paymentQuery, tradeQuery string) string {
-	query := fmt.Sprintf("WITH payments as (%s), trades as (%s)", paymentQuery, tradeQuery)
-	query += " SELECT IFNULL(trades.title, payments.title) as title, IFNULL(trades.count, 0) as tradeCount, IFNULL(trades.amount, 0) as tradeVolume,"
-	query += " IFNULL(payments.count, 0) as paymentCount, IFNULL(payments.amount, 0) as paymentVolume"
+	query := fmt.Sprintf("WITH payments AS (%s), trades AS (%s)", paymentQuery, tradeQuery)
+	query += " SELECT IFNULL(trades.title, payments.title) AS title, IFNULL(trades.count, 0) AS tradeCount, IFNULL(trades.amount, 0) AS tradeVolume,"
+	query += " IFNULL(payments.count, 0) AS paymentCount, IFNULL(payments.amount, 0) AS paymentVolume"
 	query += " FROM trades FULL JOIN payments ON payments.title = trades.title ORDER BY title ASC"
 	return query
 }
