@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  useMemo,
+  useCallback,
+} from "react";
 import { Select, Input, Button } from "@stellar/design-system";
 import { getAssetInfo } from "api/getAssetInfo";
 import { getCorridorInfo } from "api/getCorridorInfo";
 import { getVolumeInfo } from "api/getVolumeInfo";
+import { getPeriodOptions } from "helpers/getPeriodOptions";
+import { DataContext } from "DataContext";
+import { Asset, RequestParams, Aggregate } from "types.d";
 import "./styles.scss";
-
-type Asset = {
-  code: string;
-  issuer: string;
-  alias: string;
-};
 
 export const Form = ({ baseUrl }: { baseUrl: string }) => {
   const [fromAssetCodeValue, setFromAssetCodeValue] = useState("");
@@ -20,31 +23,102 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
   const [aggregateValue, setAggregateValue] = useState("");
 
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { setDataContextValue } = useContext(DataContext);
+
+  const periodOptions = useMemo(() => getPeriodOptions(), []);
+
+  const getEpochTimeFromDate = (date?: Date) => {
+    const dt = date || new Date();
+    return Math.floor(dt.getTime() / 1000).toString();
+  };
+
+  const getEpochTimeFromDaysAgo = (daysAgo: number) => {
+    const startDate = new Date();
+    return Math.floor(
+      startDate.setDate(startDate.getDate() - daysAgo) / 1000,
+    ).toString();
+  };
+
+  // fullDate in format YYYY/MM/DD (2020/12/30)
+  const getDate = (fullDate: string) => {
+    const [year, month, day] = fullDate.split("/");
+    const date = new Date();
+
+    date.setFullYear(Number(year));
+    date.setMonth(Number(month));
+    date.setDate(Number(day));
+
+    return date;
+  };
+
+  const setStartAndEndDateFromPeriod = useCallback(() => {
+    let start = "";
+    let end = "";
+
+    switch (periodValue) {
+      case "days7":
+        start = getEpochTimeFromDaysAgo(7);
+        end = getEpochTimeFromDate();
+        break;
+      case "days30":
+        start = getEpochTimeFromDaysAgo(30);
+        end = getEpochTimeFromDate();
+        break;
+      case "2020q1":
+        start = getEpochTimeFromDate(getDate("2020/01/01"));
+        end = getEpochTimeFromDate(getDate("2020/03/31"));
+        break;
+      case "2020q2":
+        start = getEpochTimeFromDate(getDate("2020/04/01"));
+        end = getEpochTimeFromDate(getDate("2020/06/30"));
+        break;
+      case "2020q3":
+        start = getEpochTimeFromDate(getDate("2020/07/01"));
+        end = getEpochTimeFromDate(getDate("2020/09/30"));
+        break;
+      case "2020q4":
+        start = getEpochTimeFromDate(getDate("2020/10/01"));
+        end = getEpochTimeFromDate(getDate("2020/12/31"));
+        break;
+      case "custom":
+      default:
+      // do nothing
+    }
+
+    setStartDateValue(start);
+    setendDateValue(end);
+  }, [periodValue]);
 
   useEffect(() => {
-    // TODO: handle no results case
     getAssetInfo(baseUrl).then((response) =>
       setAssets(response?.results || []),
     );
   }, [baseUrl]);
 
+  useEffect(() => {
+    setStartAndEndDateFromPeriod();
+  }, [setStartAndEndDateFromPeriod]);
+
   const findAssetByCode = (code: string) =>
     assets.find((asset) => asset.code === code);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    // TODO: pass period and aggregate values
     e.preventDefault();
+    setIsLoading(true);
 
-    const params = {
-      fromAssetCodeValue,
-      toAssetCodeValue,
-      periodValue,
-      startDateValue,
-      endDateValue,
-      aggregateValue,
+    const requestParams: RequestParams = {
+      fromAsset: findAssetByCode(fromAssetCodeValue),
+      toAsset: findAssetByCode(toAssetCodeValue),
+      period: periodValue,
+      startDate: startDateValue,
+      endDate: endDateValue,
+      aggregate: aggregateValue,
     };
 
-    console.log("Submitting with params: ", params);
+    setDataContextValue(null);
+
+    console.log("Submitting with params: ", requestParams);
 
     // Corridor info
     if (fromAssetCodeValue && toAssetCodeValue) {
@@ -57,18 +131,24 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
 
       if (!fromAsset || !toAsset) {
         // TODO: handle error
+        setIsLoading(false);
         return;
       }
 
       const response = await getCorridorInfo({
         baseUrl,
-        fromCode: fromAsset.code,
-        fromIssuer: fromAsset.issuer,
-        toCode: toAsset.code,
-        toIssuer: toAsset.issuer,
+        sourceCode: fromAsset.code,
+        sourceIssuer: fromAsset.issuer,
+        destCode: toAsset.code,
+        destIssuer: toAsset.issuer,
+        aggregateBy: aggregateValue,
+        start: startDateValue,
+        end: endDateValue,
       });
 
       console.log("Corridor RESPONSE: ", response);
+      setDataContextValue({ requestParams, response });
+      setIsLoading(false);
 
       return;
     }
@@ -89,15 +169,21 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
         code: asset.code,
         issuer: asset.issuer,
         isVolumeFrom: Boolean(fromAssetCodeValue),
+        aggregateBy: aggregateValue,
+        start: startDateValue,
+        end: endDateValue,
       });
 
       console.log("Volume RESPONSE: ", response);
+      setDataContextValue({ requestParams, response });
+      setIsLoading(false);
 
       return;
     }
 
     // TODO: handle no results
     console.log("No results");
+    setIsLoading(false);
   };
 
   const renderAssetOptions = () =>
@@ -139,12 +225,11 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
           onChange={(e) => setPeriodValue(e.currentTarget.value)}
         >
           <option value="">Select…</option>
-          <option value="">Last 7 days</option>
-          <option value="">Last 30 days</option>
-          <option value="">Q1 2020</option>
-          <option value="">Q2 2020</option>
-          <option value="">Q3 2020</option>
-          <option value="custom">Custom</option>
+          {periodOptions.map((p) => (
+            <option value={p.key} key={p.key}>
+              {p.label}
+            </option>
+          ))}
         </Select>
 
         {periodValue === "custom" && (
@@ -154,13 +239,17 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
               label="Start date"
               value={startDateValue}
               // TODO: update with date picker
-              onChange={(e) => setStartDateValue(e.currentTarget.value)}
+              onChange={(e) => {
+                // TODO: getEpochTimeFromDate
+                setStartDateValue(e.currentTarget.value);
+              }}
             />
             <Input
               id="end-date"
               label="End date"
               value={endDateValue}
               // TODO: update with date picker
+              // TODO: getEpochTimeFromDate
               onChange={(e) => setendDateValue(e.currentTarget.value)}
             />
           </div>
@@ -173,15 +262,19 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
           onChange={(e) => setAggregateValue(e.currentTarget.value)}
         >
           <option value="">Select…</option>
-          <option value="day">Day</option>
-          <option value="week">Week</option>
-          <option value="month">Month</option>
-          <option value="quarter">Quarter</option>
-          <option value="year">Year</option>
+          <option value={Aggregate.day}>Day</option>
+          <option value={Aggregate.week}>Week</option>
+          <option value={Aggregate.month}>Month</option>
+          <option value={Aggregate.quarter}>Quarter</option>
+          <option value={Aggregate.year}>Year</option>
         </Select>
       </div>
 
-      <Button>Fetch trade data</Button>
+      <div className="FormButtonWrapper">
+        <Button disabled={isLoading}>Fetch trade data</Button>
+        {/* TODO: add loader */}
+        {isLoading && <span className="FormLoader">Fetching…</span>}
+      </div>
     </form>
   );
 };

@@ -1,8 +1,30 @@
+@mixin table-label {
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  color: var(--color-note);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+}
+
 .TradeData {
   padding-top: 3rem;
 
   .TradeDataHeader {
     padding-bottom: 3rem;
+  }
+
+  .SearchInfo {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    & > * {
+      margin-top: 1rem;
+    }
+
+    .SearchInfoAssets {
+      margin-right: 2rem;
+    }
   }
 
   .TradeDataTable {
@@ -13,11 +35,7 @@
     color: var(--color-text);
 
     th {
-      font-size: 0.875rem;
-      line-height: 1.125rem;
-      color: var(--color-note);
-      font-weight: var(--font-weight-medium);
-      text-transform: uppercase;
+      @include table-label;
       text-align: left;
       padding-bottom: 1.0625rem;
     }
@@ -47,6 +65,42 @@
     td {
       padding-top: 1.5rem;
       padding-bottom: 1.5rem;
+    }
+
+    @media (max-width: 950px) {
+      display: block;
+
+      thead {
+        display: none;
+      }
+
+      tbody,
+      tr,
+      td {
+        display: block;
+        width: 100%;
+      }
+
+      td {
+        display: flex;
+        justify-content: space-between;
+        text-align: right;
+        padding: 0.5rem 0;
+
+        &:first-child {
+          padding-top: 1rem;
+        }
+
+        &:last-child {
+          padding-bottom: 1rem;
+        }
+
+        &::before {
+          @include table-label;
+          display: block;
+          content: (attr(data-label));
+        }
+      }
     }
   }
 }

@@ -1,8 +1,13 @@
+import { Aggregate } from "types.d";
+
 type VolumeInfoProps = {
   baseUrl: string;
   code: string;
   issuer: string;
   isVolumeFrom: boolean;
+  start?: string;
+  end?: string;
+  aggregateBy?: Aggregate | string;
 };
 
 export const getVolumeInfo = async ({
@@ -10,8 +15,19 @@ export const getVolumeInfo = async ({
   code,
   issuer,
   isVolumeFrom,
+  start,
+  end,
+  aggregateBy,
 }: VolumeInfoProps) => {
-  const volumeURL = `${baseUrl}/volume?code=${code}&issuer=${issuer}&isVolumeFrom=${isVolumeFrom}`;
-  const response = await fetch(volumeURL);
+  const volumeURL = `${baseUrl}/volume`;
+  const params = {
+    code,
+    issuer,
+    volumeFrom: isVolumeFrom.toString(),
+    ...(aggregateBy ? { aggregateBy } : {}),
+    ...(start ? { start } : {}),
+    ...(end ? { end } : {}),
+  };
+  const response = await fetch(`${volumeURL}?${new URLSearchParams(params)}`);
   return response.json();
 };

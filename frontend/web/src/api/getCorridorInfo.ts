@@ -1,19 +1,36 @@
+import { Aggregate } from "types.d";
+
 type CorridorInfoProps = {
   baseUrl: string;
-  fromCode: string;
-  fromIssuer: string;
-  toCode: string;
-  toIssuer: string;
+  sourceCode: string;
+  sourceIssuer: string;
+  destCode: string;
+  destIssuer: string;
+  start?: string;
+  end?: string;
+  aggregateBy?: Aggregate | string;
 };
 
 export const getCorridorInfo = async ({
   baseUrl,
-  fromCode,
-  fromIssuer,
-  toCode,
-  toIssuer,
+  sourceCode,
+  sourceIssuer,
+  destCode,
+  destIssuer,
+  start,
+  end,
+  aggregateBy,
 }: CorridorInfoProps) => {
-  const corridorURL = `${baseUrl}/corridor?sourceCode=${fromCode}&sourceIssuer=${fromIssuer}&destCode=${toCode}&destIssuer=${toIssuer}`;
-  const response = await fetch(corridorURL);
+  const corridorURL = `${baseUrl}/corridor`;
+  const params = {
+    sourceCode,
+    sourceIssuer,
+    destCode,
+    destIssuer,
+    ...(aggregateBy ? { aggregateBy } : {}),
+    ...(start ? { start } : {}),
+    ...(end ? { end } : {}),
+  };
+  const response = await fetch(`${corridorURL}?${new URLSearchParams(params)}`);
   return response.json();
 };
