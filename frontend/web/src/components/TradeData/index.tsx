@@ -2,13 +2,11 @@ import React, { useContext } from "react";
 import { Heading2 } from "@stellar/design-system";
 import { getPeriodOptions } from "helpers/getPeriodOptions";
 import { DataContext } from "DataContext";
-import { Asset } from "types.d";
+import { Asset, TradeDataResponseItem } from "types.d";
 import "./styles.scss";
 
 export const TradeData = () => {
   const { dataContextValue } = useContext(DataContext);
-
-  console.log("dataContextValue: ", dataContextValue);
 
   if (!dataContextValue) {
     return null;
@@ -57,8 +55,7 @@ export const TradeData = () => {
             </tr>
           </thead>
           <tbody>
-            {/* TODO: update type */}
-            {response.results.map((item: any) => (
+            {response.results.map((item: TradeDataResponseItem) => (
               <tr key={item.title}>
                 <td data-label={tableLabels.title}>{item.title}</td>
                 <td data-label={tableLabels.tradeCount}>{item.tradeCount}</td>
