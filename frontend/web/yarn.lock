@@ -1355,11 +1355,12 @@
   resolved "https://registry.yarnpkg.com/@nodelib/fs.stat/-/fs.stat-1.1.3.tgz#2b5a3ab3f918cca48a8c754c08168e3f03eba61b"
   integrity sha512-shAmDyaQC4H92APFoIaVDHCx5bStIocgvbwQyxPRrbUY20V1EYTbSDchWbuwlMG3V17cprZhA6+78JfB+3DTPw==
 
-"@stellar/design-system@^0.1.0-alpha.0":
-  version "0.1.0-alpha.0"
-  resolved "https://registry.yarnpkg.com/@stellar/design-system/-/design-system-0.1.0-alpha.0.tgz#867db558f96dc633d378383cc6b521d154381421"
-  integrity sha512-D/6GHztTf0RWO1miIUgJynwo419uwOvM0oijx28fA3+oAhhYeu4/+eDDEDYjcJFJnbFLD9nXNIyZ6eWLDL+fLw==
+"@stellar/design-system@^0.1.0-alpha.1":
+  version "0.1.0-alpha.1"
+  resolved "https://registry.yarnpkg.com/@stellar/design-system/-/design-system-0.1.0-alpha.1.tgz#c5a87454c825203c0a2c6ff0aed1f2c16c16e42b"
+  integrity sha512-aB6wwCKmW897xyNVNlTq2BQd9YecZGMgmThxdMl4N2VApCaQPqQfl72/70oS/0G5NmOZ9VfRWmQZsRTBGgxnWg==
   dependencies:
+    configurable-date-input-polyfill "^2.7.2"
     normalize.css "^8.0.1"
     react "^17.0.1"
     react-dom "^17.0.1"
@@ -3272,6 +3273,11 @@ concurrently@^5.3.0:
     supports-color "^6.1.0"
     tree-kill "^1.2.2"
     yargs "^13.3.0"
+
+configurable-date-input-polyfill@^2.7.2:
+  version "2.7.2"
+  resolved "https://registry.yarnpkg.com/configurable-date-input-polyfill/-/configurable-date-input-polyfill-2.7.2.tgz#8dad92a6dcb6650a7398d581f25acb1f32774468"
+  integrity sha512-s2kdlrogNwXxbLFOmDxVXbWTKkohF7AuC3LQSb+q6e8gUCd+p/cYsy/m/yTUs1y0Cy/691Yks1aDjFZavB/yhQ==
 
 confusing-browser-globals@^1.0.9:
   version "1.0.10"

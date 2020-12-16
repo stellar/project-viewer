@@ -11,18 +11,6 @@
   }
 }
 
-// TODO: fixes START
-
-body {
-  min-width: 320px;
-}
-
-.Select .SelectWrapper select {
-  padding: 0.55rem 2rem 0.55rem 0.75rem !important;
-}
-
-// END fixes
-
 .Inset {
   position: relative;
   margin: 0 auto;
@@ -63,7 +51,6 @@ body {
   flex-shrink: 0;
 }
 
-/* TODO: Component with props for bg and vertical padding */
 .Section {
   background-color: var(--color-background-secondary);
   padding-top: 3rem;

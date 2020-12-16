@@ -1,6 +1,7 @@
 import React, { useContext } from "react";
-import { Heading2 } from "@stellar/design-system";
+import { Heading2, IconCalendar } from "@stellar/design-system";
 import { getPeriodOptions } from "helpers/getPeriodOptions";
+import { formatDateYYYYMMDD } from "helpers/formatDate";
 import { DataContext } from "DataContext";
 import { Asset, TradeDataResponseItem } from "types.d";
 import "./styles.scss";
@@ -20,6 +21,21 @@ export const TradeData = () => {
   const getAssetLabel = (asset: Asset) =>
     asset ? `${asset.code} - ${asset.alias}` : "Any";
 
+  const getPeriodLabel = () => {
+    const { startDate, endDate } = requestParams;
+
+    if (!periodItem || !(startDate && endDate)) {
+      return null;
+    }
+
+    return periodItem.key === "custom"
+      ? `${formatDateYYYYMMDD(startDate, "/")} - ${formatDateYYYYMMDD(
+          endDate,
+          "/",
+        )}`
+      : periodItem?.label;
+  };
+
   const tableLabels = {
     title: requestParams.aggregate ? "Date" : "Ledger",
     tradeCount: "# of trades",
@@ -38,8 +54,12 @@ export const TradeData = () => {
             From <strong>{getAssetLabel(requestParams.fromAsset)}</strong> to{" "}
             <strong>{getAssetLabel(requestParams.toAsset)}</strong>
           </div>
-          {/* TODO: add icon */}
-          {periodItem && <div>{periodItem.label}</div>}
+          {periodItem && (
+            <div className="SearchInfoPeriod">
+              <IconCalendar />
+              <span>{getPeriodLabel()}</span>
+            </div>
+          )}
         </div>
       </div>
 
