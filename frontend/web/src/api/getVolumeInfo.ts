@@ -1,3 +1,4 @@
+import { getEpochTimeFromDate } from "helpers/formatDate";
 import { Aggregate } from "types.d";
 
 type VolumeInfoProps = {
@@ -5,8 +6,8 @@ type VolumeInfoProps = {
   code: string;
   issuer: string;
   isVolumeFrom: boolean;
-  start?: string;
-  end?: string;
+  start?: Date | null;
+  end?: Date | null;
   aggregateBy?: Aggregate | string;
 };
 
@@ -25,8 +26,8 @@ export const getVolumeInfo = async ({
     issuer,
     volumeFrom: isVolumeFrom.toString(),
     ...(aggregateBy ? { aggregateBy } : {}),
-    ...(start ? { start } : {}),
-    ...(end ? { end } : {}),
+    ...(start ? { start: getEpochTimeFromDate(start) } : {}),
+    ...(end ? { end: getEpochTimeFromDate(end) } : {}),
   };
   const response = await fetch(`${volumeURL}?${new URLSearchParams(params)}`);
   return response.json();

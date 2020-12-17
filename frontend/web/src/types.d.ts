@@ -16,10 +16,9 @@ export type RequestParams = {
   fromAsset?: Asset;
   toAsset?: Asset;
   period?: string;
-  startDate?: string;
-  endDate?: string;
-  // TODO: handle without string
-  aggregate?: Aggregate | string;
+  startDate?: Date | null;
+  endDate?: Date | null;
+  aggregate?: string;
 };
 
 export type TradeDataResponseItem = {

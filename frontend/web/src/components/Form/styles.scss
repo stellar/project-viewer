@@ -1,8 +1,8 @@
 .Form {
-  // TODO: polish responsive layout
   .FormInputs {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    column-gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 
     & > * {
       width: auto;
@@ -11,10 +11,6 @@
       flex-basis: 0;
       flex-shrink: 1;
       margin-bottom: 1.5rem;
-    }
-
-    & > *:not(:last-child) {
-      margin-right: 1rem;
     }
 
     .FormInputsCustom {
@@ -29,6 +25,7 @@
     align-items: center;
 
     .FormLoader {
+      --loader-size: 1.8rem;
       margin-left: 1rem;
     }
   }

@@ -25,6 +25,18 @@
     .SearchInfoAssets {
       margin-right: 2rem;
     }
+
+    .SearchInfoPeriod {
+      display: flex;
+      align-items: flex-end;
+
+      svg {
+        width: 1.4rem;
+        height: 1.4rem;
+        fill: inherit;
+        margin-right: 0.6rem;
+      }
+    }
   }
 
   .TradeDataTable {

@@ -5,11 +5,12 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import { Select, Input, Button } from "@stellar/design-system";
+import { Select, Input, Button, Loader } from "@stellar/design-system";
 import { getAssetInfo } from "api/getAssetInfo";
 import { getCorridorInfo } from "api/getCorridorInfo";
 import { getVolumeInfo } from "api/getVolumeInfo";
 import { getPeriodOptions } from "helpers/getPeriodOptions";
+import { getDateFromDaysAgo, formatDateYYYYMMDD } from "helpers/formatDate";
 import { DataContext } from "DataContext";
 import { Asset, RequestParams, Aggregate } from "types.d";
 import "./styles.scss";
@@ -18,9 +19,12 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
   const [fromAssetCodeValue, setFromAssetCodeValue] = useState("");
   const [toAssetCodeValue, setToAssetCodeValue] = useState("");
   const [periodValue, setPeriodValue] = useState("");
-  const [startDateValue, setStartDateValue] = useState("");
-  const [endDateValue, setendDateValue] = useState("");
+  const [startDateValue, setStartDateValue] = useState<Date | null>(null);
+  const [endDateValue, setEndDateValue] = useState<Date | null>(null);
   const [aggregateValue, setAggregateValue] = useState("");
+
+  const [datePickerStart, setDatePickerStart] = useState("");
+  const [datePickerEnd, setDatePickerEnd] = useState("");
 
   const [assets, setAssets] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,58 +32,47 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
 
   const periodOptions = useMemo(() => getPeriodOptions(), []);
 
-  const getEpochTimeFromDate = (date?: Date) => {
-    const dt = date || new Date();
-    return Math.floor(dt.getTime() / 1000).toString();
-  };
-
-  const getEpochTimeFromDaysAgo = (daysAgo: number) => {
-    const startDate = new Date();
-    return Math.floor(
-      startDate.setDate(startDate.getDate() - daysAgo) / 1000,
-    ).toString();
-  };
-
-  // fullDate in format YYYY/MM/DD (2020/12/30)
+  // fullDate in format YYYY-MM-DD (2020-12-30)
   const getDate = (fullDate: string) => {
-    const [year, month, day] = fullDate.split("/");
+    const [year, month, day] = fullDate.split("-");
     const date = new Date();
 
     date.setFullYear(Number(year));
-    date.setMonth(Number(month));
+    // Month is 0 based
+    date.setMonth(Number(month) - 1);
     date.setDate(Number(day));
 
     return date;
   };
 
   const setStartAndEndDateFromPeriod = useCallback(() => {
-    let start = "";
-    let end = "";
+    let start: Date | null = null;
+    let end: Date | null = null;
 
     switch (periodValue) {
       case "days7":
-        start = getEpochTimeFromDaysAgo(7);
-        end = getEpochTimeFromDate();
+        start = getDateFromDaysAgo(7);
+        end = new Date();
         break;
       case "days30":
-        start = getEpochTimeFromDaysAgo(30);
-        end = getEpochTimeFromDate();
+        start = getDateFromDaysAgo(30);
+        end = new Date();
         break;
       case "2020q1":
-        start = getEpochTimeFromDate(getDate("2020/01/01"));
-        end = getEpochTimeFromDate(getDate("2020/03/31"));
+        start = getDate("2020-01-01");
+        end = getDate("2020-03-31");
         break;
       case "2020q2":
-        start = getEpochTimeFromDate(getDate("2020/04/01"));
-        end = getEpochTimeFromDate(getDate("2020/06/30"));
+        start = getDate("2020-04-01");
+        end = getDate("2020-06-30");
         break;
       case "2020q3":
-        start = getEpochTimeFromDate(getDate("2020/07/01"));
-        end = getEpochTimeFromDate(getDate("2020/09/30"));
+        start = getDate("2020-07-01");
+        end = getDate("2020-09-30");
         break;
       case "2020q4":
-        start = getEpochTimeFromDate(getDate("2020/10/01"));
-        end = getEpochTimeFromDate(getDate("2020/12/31"));
+        start = getDate("2020-10-01");
+        end = getDate("2020-12-31");
         break;
       case "custom":
       default:
@@ -87,7 +80,7 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
     }
 
     setStartDateValue(start);
-    setendDateValue(end);
+    setEndDateValue(end);
   }, [periodValue]);
 
   useEffect(() => {
@@ -98,6 +91,8 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
 
   useEffect(() => {
     setStartAndEndDateFromPeriod();
+    setDatePickerStart("");
+    setDatePickerEnd("");
   }, [setStartAndEndDateFromPeriod]);
 
   const findAssetByCode = (code: string) =>
@@ -237,20 +232,25 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
             <Input
               id="start-date"
               label="Start date"
-              value={startDateValue}
-              // TODO: update with date picker
+              value={datePickerStart}
               onChange={(e) => {
-                // TODO: getEpochTimeFromDate
-                setStartDateValue(e.currentTarget.value);
+                setDatePickerStart(e.currentTarget.value);
+                setStartDateValue(getDate(e.currentTarget.value));
               }}
+              type="date"
+              max={formatDateYYYYMMDD()}
             />
             <Input
               id="end-date"
               label="End date"
-              value={endDateValue}
-              // TODO: update with date picker
-              // TODO: getEpochTimeFromDate
-              onChange={(e) => setendDateValue(e.currentTarget.value)}
+              value={datePickerEnd}
+              onChange={(e) => {
+                setDatePickerEnd(e.currentTarget.value);
+                setEndDateValue(getDate(e.currentTarget.value));
+              }}
+              type="date"
+              min={datePickerStart}
+              max={formatDateYYYYMMDD()}
             />
           </div>
         )}
@@ -272,8 +272,11 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
 
       <div className="FormButtonWrapper">
         <Button disabled={isLoading}>Fetch trade data</Button>
-        {/* TODO: add loader */}
-        {isLoading && <span className="FormLoader">Fetching…</span>}
+        {isLoading && (
+          <div className="FormLoader">
+            <Loader />
+          </div>
+        )}
       </div>
     </form>
   );
