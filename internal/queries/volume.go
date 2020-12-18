@@ -43,18 +43,36 @@ func createVolumeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnix
 // The timestamps are in UTC to ensure they are consistent with the ledger closed_at timestamps.
 func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, endUnixTimestamp, aggregateBy string) string {
 	// A sample query is below:
-	// SELECT FORMAT("Ledger %d", L.sequence) AS title, COUNT(history_operation_id) AS count,
-	// CASE WHEN (B.asset_code="NGNT" AND B.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD") THEN SUM(T.counter_amount)/10000000
-	// WHEN C.asset_code="NGNT" AND C.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD" THEN SUM(T.base_amount)/10000000 END AS amount,
-	// FROM `crypto-stellar.crypto_stellar.history_trades` T
-	// JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id
-	// JOIN `crypto-stellar.crypto_stellar.history_assets` C ON C.id=T.counter_asset_id
-	// JOIN `crypto-stellar.crypto_stellar.history_ledgers` L ON L.closed_at=T.ledger_closed_at
-	// WHERE ((B.asset_code="NGNT" AND B.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD") OR
-	// C.asset_code="NGNT" AND C.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD")
-	// GROUP BY title, B.asset_code, B.asset_issuer, C.asset_code, C.asset_issuer
-	// ORDER BY title ASC LIMIT 100
+	// WITH base_trades AS (
+	// 	 SELECT FORMAT_DATE("%Y/%m/%d", DATE_TRUNC(DATE(closed_at), MONTH)) AS title, COUNT(history_operation_id) AS count,
+	// 		CASE WHEN (B.asset_code="NGNT" AND B.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD") THEN SUM(T.base_amount)/10000000 END as amount
+	// 		FROM `crypto-stellar.crypto_stellar.history_trades` T
+	// 		JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id
+	// 		JOIN `crypto-stellar.crypto_stellar.history_assets` C ON C.id=T.counter_asset_id
+	// 		JOIN `crypto-stellar.crypto_stellar.history_ledgers` L ON L.closed_at=T.ledger_closed_at
+	// 		WHERE (B.asset_code="NGNT" AND B.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD")
+	// 		GROUP BY title, B.asset_code, B.asset_issuer
+	// 		ORDER BY title ASC
+	//   ),
+	// 	counter_trades AS (
+	// 	  SELECT FORMAT_DATE("%Y/%m/%d", DATE_TRUNC(DATE(closed_at), MONTH)) AS title, COUNT(history_operation_id) AS count,
+	// 	    CASE WHEN (C.asset_code="NGNT" AND C.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD") THEN SUM(T.counter_amount)/10000000 END AS amount,
+	// 		FROM `crypto-stellar.crypto_stellar.history_trades` T
+	// 		JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id
+	// 		JOIN `crypto-stellar.crypto_stellar.history_assets` C ON C.id=T.counter_asset_id
+	// 		JOIN `crypto-stellar.crypto_stellar.history_ledgers` L ON L.closed_at=T.ledger_closed_at
+	// 		WHERE (C.asset_code="NGNT" AND C.asset_issuer="GAWODAROMJ33V5YDFY3NPYTHVYQG7MJXVJ2ND3AOGIHYRWINES6ACCPD")
+	// 		GROUP BY title, C.asset_code, C.asset_issuer
+	// 		ORDER BY title ASC)
+	// 	SELECT IFNULL(bt.title, ct.title) AS title, IFNULL(bt.count, 0) + IFNULL(ct.count, 0) as count, IFNULL(bt.amount, 0) + IFNULL(ct.amount, 0) as amount
+	// 	FROM base_trades bt
+	// 	FULL JOIN counter_trades ct ON bt.title=ct.title ORDER BY title ASC LIMIT 100
 
+	titleQuery := getTitleField("L.sequence", "L.closed_at", aggregateBy)
+	joins := " FROM `crypto-stellar.crypto_stellar.history_trades` T"
+	joins += " JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id"
+	joins += " JOIN `crypto-stellar.crypto_stellar.history_assets` C ON C.id=T.counter_asset_id"
+	joins += " JOIN `crypto-stellar.crypto_stellar.history_ledgers` L ON L.closed_at=T.ledger_closed_at"
 	// Construct the base match and select statements. If we want volume from the base asset,
 	// we need to look at the base_amount. If we want volume to, we look at the counter_amount.
 	assetType := "counter"
@@ -62,8 +80,16 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, en
 		assetType = "base"
 	}
 
-	baseAssetMatch := fmt.Sprintf("(B.asset_code=\"%s\" AND B.asset_issuer=\"%s\")", asset.Code, asset.Issuer)
+	baseAssetMatch := fmt.Sprintf("B.asset_code=\"%s\" AND B.asset_issuer=\"%s\"", asset.Code, asset.Issuer)
 	baseAssetSelect := fmt.Sprintf("SUM(T.%s_amount)/10000000", assetType)
+	baseAssetQuery := fmt.Sprintf("SELECT %s, COUNT(history_operation_id) AS count, CASE WHEN %s THEN %s END AS amount ", titleQuery, baseAssetMatch, baseAssetSelect)
+	baseAssetQuery += joins
+	baseAssetQuery += fmt.Sprintf(" WHERE (%s)", baseAssetMatch)
+	if startUnixTimestamp != "" && endUnixTimestamp != "" {
+		baseAssetQuery += fmt.Sprintf(" AND L.closed_at BETWEEN TIMESTAMP_SECONDS(%s) AND TIMESTAMP_SECONDS(%s)", startUnixTimestamp, endUnixTimestamp)
+	}
+
+	baseAssetQuery += "GROUP BY title, B.asset_code, B.asset_issuer ORDER BY title ASC"
 
 	// Construct the counter match and select statements. If we want volume from the counter asset,
 	// we need to look at the counter_amount. If we want volume to, we look at the base_amount.
@@ -74,22 +100,20 @@ func createVolumeTradeQuery(asset Asset, volumeFrom bool, startUnixTimestamp, en
 
 	counterAssetMatch := fmt.Sprintf("C.asset_code=\"%s\" AND C.asset_issuer=\"%s\"", asset.Code, asset.Issuer)
 	counterAssetSelect := fmt.Sprintf("SUM(T.%s_amount)/10000000", assetType)
-
-	titleQuery := getTitleField("L.sequence", "L.closed_at", aggregateBy)
-
-	query := fmt.Sprintf("SELECT %s, COUNT(history_operation_id) AS count, CASE WHEN %s THEN %s WHEN %s THEN %s END AS amount,",
-		titleQuery, baseAssetMatch, baseAssetSelect, counterAssetMatch, counterAssetSelect)
-	query += " FROM `crypto-stellar.crypto_stellar.history_trades` T"
-	query += " JOIN `crypto-stellar.crypto_stellar.history_assets` B ON B.id=T.base_asset_id"
-	query += " JOIN `crypto-stellar.crypto_stellar.history_assets` C ON C.id=T.counter_asset_id"
-	query += " JOIN `crypto-stellar.crypto_stellar.history_ledgers` L ON L.closed_at=T.ledger_closed_at"
-	query += fmt.Sprintf(" WHERE (%s OR %s)", baseAssetMatch, counterAssetMatch)
-
+	counterAssetQuery := fmt.Sprintf("SELECT %s, COUNT(history_operation_id) AS count, CASE WHEN %s THEN %s END AS amount ", titleQuery, counterAssetMatch, counterAssetSelect)
+	counterAssetQuery += joins
+	counterAssetQuery += fmt.Sprintf(" WHERE (%s)", counterAssetMatch)
 	if startUnixTimestamp != "" && endUnixTimestamp != "" {
-		query += fmt.Sprintf(" AND L.closed_at BETWEEN TIMESTAMP_SECONDS(%s) AND TIMESTAMP_SECONDS(%s)", startUnixTimestamp, endUnixTimestamp)
+		counterAssetQuery += fmt.Sprintf(" AND L.closed_at BETWEEN TIMESTAMP_SECONDS(%s) AND TIMESTAMP_SECONDS(%s)", startUnixTimestamp, endUnixTimestamp)
 	}
 
-	query += fmt.Sprintf(" GROUP BY title, B.asset_code, B.asset_issuer, C.asset_code, C.asset_issuer ORDER BY title ASC LIMIT %d", queryLimit)
+	counterAssetQuery += "GROUP BY title, C.asset_code, C.asset_issuer ORDER BY title ASC"
+
+	query := fmt.Sprintf("WITH base_trades AS (%s), counter_trades AS (%s)", baseAssetQuery, counterAssetQuery)
+	query += " SELECT IFNULL(bt.title, ct.title) AS title, IFNULL(bt.count, 0) + IFNULL(ct.count, 0) as count, IFNULL(bt.amount, 0) + IFNULL(ct.amount, 0) AS amount"
+	query += " FROM base_trades bt"
+	query += " FULL JOIN counter_trades ct "
+	query += fmt.Sprintf(" ON bt.title=ct.title ORDER BY title ASC LIMIT %d", queryLimit)
 	return query
 }
 
