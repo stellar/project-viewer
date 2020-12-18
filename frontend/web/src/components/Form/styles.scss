@@ -24,6 +24,10 @@
     display: flex;
     align-items: center;
 
+    button:not(:last-of-type) {
+      margin-right: 1rem;
+    }
+
     .FormLoader {
       --loader-size: 1.8rem;
       margin-left: 1rem;

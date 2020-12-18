@@ -25,6 +25,7 @@ const App = () => {
         <div className="Content">
           <div className="Section">
             <div className="Inset">
+              {/* TODO: update before launch */}
               <Form baseUrl="http://localhost:8080" />
             </div>
           </div>
