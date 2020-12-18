@@ -27,4 +27,5 @@ export type TradeDataResponseItem = {
   tradeVolume: number;
   paymentCount: number;
   paymentVolume: number;
+  rate?: number;
 };

@@ -8,6 +8,7 @@ import React, {
 import { Select, Input, Button, Loader } from "@stellar/design-system";
 import { getAssetInfo } from "api/getAssetInfo";
 import { getCorridorInfo } from "api/getCorridorInfo";
+import { getRateInfo } from "api/getRateInfo";
 import { getVolumeInfo } from "api/getVolumeInfo";
 import { getPeriodOptions } from "helpers/getPeriodOptions";
 import { getDateFromDaysAgo, formatDateYYYYMMDD } from "helpers/formatDate";
@@ -98,7 +99,9 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
   const findAssetByCode = (code: string) =>
     assets.find((asset) => asset.code === code);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleFetchTradeData = async (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  ) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -181,6 +184,50 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
     setIsLoading(false);
   };
 
+  const handleFetchRates = async (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  ) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const requestParams: RequestParams = {
+      fromAsset: findAssetByCode(fromAssetCodeValue),
+      toAsset: findAssetByCode(toAssetCodeValue),
+      period: periodValue,
+      startDate: startDateValue,
+      endDate: endDateValue,
+      aggregate: aggregateValue,
+    };
+
+    setDataContextValue(null);
+
+    const fromAsset = findAssetByCode(fromAssetCodeValue);
+    const toAsset = findAssetByCode(toAssetCodeValue);
+
+    if (!fromAsset || !toAsset) {
+      // TODO: handle error
+      setIsLoading(false);
+      return;
+    }
+
+    console.log("Fetching rates with params: ", requestParams);
+
+    const response = await getRateInfo({
+      baseUrl,
+      sourceCode: fromAsset.code,
+      sourceIssuer: fromAsset.issuer,
+      destCode: toAsset.code,
+      destIssuer: toAsset.issuer,
+      aggregateBy: aggregateValue,
+      start: startDateValue,
+      end: endDateValue,
+    });
+
+    console.log("Rates RESPONSE: ", response);
+    setDataContextValue({ requestParams, response, isRates: true });
+    setIsLoading(false);
+  };
+
   const renderAssetOptions = () =>
     assets.map((asset) => (
       <option key={`${asset.code}-${asset.alias}`} value={asset.code}>
@@ -189,7 +236,7 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
     ));
 
   return (
-    <form className="Form" onSubmit={handleSubmit}>
+    <form className="Form">
       <div className="FormInputs">
         <Select
           id="fromAsset"
@@ -271,7 +318,18 @@ export const Form = ({ baseUrl }: { baseUrl: string }) => {
       </div>
 
       <div className="FormButtonWrapper">
-        <Button disabled={isLoading}>Fetch trade data</Button>
+        <Button
+          onClick={handleFetchTradeData}
+          disabled={isLoading || !(fromAssetCodeValue || toAssetCodeValue)}
+        >
+          Fetch trade data
+        </Button>
+        <Button
+          onClick={handleFetchRates}
+          disabled={isLoading || !(fromAssetCodeValue && toAssetCodeValue)}
+        >
+          Fetch rates
+        </Button>
         {isLoading && (
           <div className="FormLoader">
             <Loader />
